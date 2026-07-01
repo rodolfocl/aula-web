@@ -1,0 +1,25 @@
+{
+  "name": "aula-web",
+  "version": "1.0.0",
+  "description": "Plataforma educativa Aula PDV — Ministerio Pan de Vida",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@quasar/extras": "^2.0.1",
+    "axios": "^1.18.1",
+    "pinia": "^2.3.1",
+    "quasar": "^2.20.2",
+    "vue": "^3.5.39",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@quasar/vite-plugin": "^1.12.0",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "sass": "^1.101.0",
+    "vite": "^6.4.3"
+  }
+}
