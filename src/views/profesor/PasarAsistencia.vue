@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md" style="background: #F5F0E8; min-height: 100vh;">
+  <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
     <!-- Cabecera -->
     <div class="row items-center q-mb-lg">
       <q-btn

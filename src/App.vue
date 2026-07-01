@@ -10,6 +10,6 @@
 <style>
 body,
 .q-page-container {
-  background-color: #F5F0E8;
+  background-color: #F0F2F5;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md" style="background: #F5F0E8; min-height: 100vh;">
+  <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
     <div class="text-h5 text-weight-bold q-mb-lg" style="color: #0D1B3E;">Mis Cursos</div>
 
     <div class="row q-col-gutter-md">

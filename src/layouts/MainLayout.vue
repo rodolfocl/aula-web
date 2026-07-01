@@ -8,7 +8,7 @@
         </q-toolbar-title>
         <q-space />
         <div class="q-mr-sm text-caption text-white row items-center">
-          <span>{{ auth.user?.nombre }}</span>
+          <span style="color: #FFFFFF; font-size: 15px;">{{ auth.user?.nombre }}</span>
           <template v-if="esAdmin">
             <span
               class="q-ml-sm row items-center no-wrap q-px-sm q-py-xs"
