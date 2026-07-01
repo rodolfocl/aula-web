@@ -22,8 +22,8 @@
               class="q-ml-sm row items-center no-wrap q-px-sm q-py-xs"
               style="background: #C9A96E; color: #2C1F0A; border-radius: 6px; font-size: 11px; font-weight: 700; gap: 4px;"
             >
-              <i class="ti ti-crown" style="font-size: 13px; line-height: 1;"></i>
               Administrador
+              <i class="ti ti-crown" style="font-size: 13px; line-height: 1;"></i>
             </span>
           </template>
           <template v-else>
