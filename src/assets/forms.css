@@ -1,0 +1,40 @@
+.pdv-dialog {
+  min-width: 380px;
+  background: white;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+}
+
+.pdv-dialog-title {
+  font-size: 22px;
+  font-weight: 500;
+  color: #111111;
+  padding: 28px 28px 0;
+}
+
+.pdv-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px 28px 8px;
+}
+
+.pdv-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px 24px;
+}
+
+.pdv-btn-save {
+  background: #0D1B3E !important;
+  color: white !important;
+  border-radius: 6px !important;
+  padding: 0 24px !important;
+  font-weight: 600 !important;
+}
+
+.pdv-btn-cancel {
+  color: #555555 !important;
+}

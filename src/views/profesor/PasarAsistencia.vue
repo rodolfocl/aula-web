@@ -20,7 +20,7 @@
     </div>
 
     <!-- Lista de alumnos -->
-    <q-card flat style="background: white; border-radius: 12px; border: 1px solid #E8D5B0; overflow: hidden;">
+    <q-card flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
       <q-list separator>
         <q-item
           v-for="alumno in alumnos"

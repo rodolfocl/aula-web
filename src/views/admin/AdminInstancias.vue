@@ -1,27 +1,38 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
     <div class="row items-center justify-between q-mb-md">
-      <div class="text-h5 text-weight-bold text-primary">Gestión de Instancias</div>
-      <q-btn color="primary" icon="add" label="Nueva instancia" unelevated @click="abrirDialogo()" />
+      <div class="text-h5 text-weight-bold" style="color: #0D1B3E;">Gestión de Instancias</div>
+      <q-btn
+        unelevated
+        icon="add"
+        label="Nueva instancia"
+        style="background: #0D1B3E; color: white; border-radius: 8px;"
+        @click="abrirDialogo()"
+      />
     </div>
 
-    <q-card flat bordered>
+    <q-card flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
       <q-table
         :rows="instancias"
         :columns="columnas"
         row-key="id"
         flat
+        no-data-label="No hay instancias registradas"
       >
         <template #body-cell-estado="props">
           <q-td :props="props">
-            <q-badge :color="props.value === 'activa' ? 'positive' : 'grey'">
+            <q-badge
+              :style="props.value === 'activa'
+                ? 'background: #E8F5E9; color: #1B5E20; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
+                : 'background: #F5F5F5; color: #616161; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'"
+            >
               {{ props.value }}
             </q-badge>
           </q-td>
         </template>
         <template #body-cell-acciones="props">
           <q-td :props="props" class="q-gutter-xs">
-            <q-btn flat round dense icon="edit" color="primary" size="sm" @click="abrirDialogo(props.row)" />
+            <q-btn flat round dense icon="edit" size="sm" style="color: #0D1B3E;" @click="abrirDialogo(props.row)" />
             <q-btn flat round dense icon="delete" color="negative" size="sm" @click="eliminar(props.row)" />
           </q-td>
         </template>
@@ -29,21 +40,19 @@
     </q-card>
 
     <q-dialog v-model="dialogo">
-      <q-card style="min-width: 400px">
-        <q-card-section>
-          <div class="text-h6">{{ editando ? 'Editar Instancia' : 'Nueva Instancia' }}</div>
-        </q-card-section>
-        <q-card-section class="q-gutter-md">
-          <q-select v-model="form.curso" label="Curso" :options="nombresCursos" outlined dense />
-          <q-input v-model="form.periodo" label="Período (ej: 2026-1)" outlined dense />
-          <q-input v-model="form.fechaInicio" label="Fecha inicio" type="date" outlined dense />
-          <q-input v-model="form.fechaFin" label="Fecha fin" type="date" outlined dense />
-          <q-select v-model="form.estado" label="Estado" :options="['activa', 'cerrada']" outlined dense />
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn color="primary" label="Guardar" unelevated @click="guardar" />
-        </q-card-actions>
+      <q-card class="pdv-dialog">
+        <div class="pdv-dialog-title">{{ editando ? 'Editar Instancia' : 'Nueva Instancia' }}</div>
+        <div class="pdv-dialog-body">
+          <q-select v-model="form.curso" label="Curso" :options="nombresCursos" />
+          <q-input v-model="form.periodo" label="Período (ej: 2026-1)" />
+          <q-input v-model="form.fechaInicio" label="Fecha inicio" type="date" />
+          <q-input v-model="form.fechaFin" label="Fecha fin" type="date" />
+          <q-select v-model="form.estado" label="Estado" :options="['activa', 'cerrada']" />
+        </div>
+        <div class="pdv-dialog-actions">
+          <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
+          <q-btn unelevated label="Guardar" class="pdv-btn-save" @click="guardar" />
+        </div>
       </q-card>
     </q-dialog>
   </q-page>
@@ -87,10 +96,10 @@ function abrirDialogo(instancia = null) {
 function guardar() {
   if (editando.value) {
     Object.assign(editando.value, form.value)
-    $q.notify({ type: 'positive', message: 'Instancia actualizada.' })
+    $q.notify({ type: 'positive', message: 'Instancia actualizada.', position: 'top' })
   } else {
     instancias.value.push({ id: Date.now(), ...form.value })
-    $q.notify({ type: 'positive', message: 'Instancia creada.' })
+    $q.notify({ type: 'positive', message: 'Instancia creada.', position: 'top' })
   }
   dialogo.value = false
 }
@@ -103,7 +112,7 @@ function eliminar(instancia) {
     cancel: { label: 'Cancelar', flat: true },
   }).onOk(() => {
     instancias.value = instancias.value.filter(i => i.id !== instancia.id)
-    $q.notify({ type: 'negative', message: 'Instancia eliminada.' })
+    $q.notify({ type: 'negative', message: 'Instancia eliminada.', position: 'top' })
   })
 }
 </script>

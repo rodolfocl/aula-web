@@ -1,49 +1,53 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
     <div class="row items-center justify-between q-mb-md">
-      <div class="text-h5 text-weight-bold text-primary">Gestión de Cursos</div>
-      <q-btn color="primary" icon="add" label="Nuevo curso" unelevated @click="abrirDialogo()" />
+      <div class="text-h5 text-weight-bold" style="color: #0D1B3E;">Gestión de Cursos</div>
+      <q-btn
+        unelevated
+        icon="add"
+        label="Nuevo curso"
+        style="background: #0D1B3E; color: white; border-radius: 8px;"
+        @click="abrirDialogo()"
+      />
     </div>
 
     <div class="row q-col-gutter-md">
       <div v-for="curso in cursos" :key="curso.id" class="col-12 col-sm-6 col-lg-4">
-        <q-card flat bordered>
+        <q-card flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
           <q-card-section>
-            <div class="text-subtitle1 text-weight-bold">{{ curso.nombre }}</div>
-            <div class="text-caption text-grey-6 q-mt-xs">
+            <div class="text-subtitle1 text-weight-bold" style="color: #0D1B3E;">{{ curso.nombre }}</div>
+            <div class="text-caption q-mt-xs" style="color: #8B7355;">
               <q-icon name="person" size="xs" /> {{ curso.profesor }}
             </div>
           </q-card-section>
           <q-card-section class="q-pt-none">
-            <q-chip dense color="secondary" text-color="white" icon="people">
+            <q-chip dense icon="people" style="background: rgba(13,27,62,0.08); color: #0D1B3E; font-size: 12px;">
               {{ curso.alumnos }} alumnos
             </q-chip>
-            <q-chip dense color="grey-4" text-color="dark" icon="schedule">
+            <q-chip dense icon="schedule" style="background: rgba(201,169,110,0.2); color: #7A5C1E; font-size: 12px;">
               {{ curso.horas }}h
             </q-chip>
           </q-card-section>
           <q-card-actions>
-            <q-btn flat color="primary" icon="edit" label="Editar" dense @click="abrirDialogo(curso)" />
-            <q-btn flat color="negative" icon="delete" label="Eliminar" dense @click="eliminar(curso)" />
+            <q-btn flat dense icon="edit" label="Editar" style="color: #0D1B3E;" @click="abrirDialogo(curso)" />
+            <q-btn flat dense icon="delete" label="Eliminar" color="negative" @click="eliminar(curso)" />
           </q-card-actions>
         </q-card>
       </div>
     </div>
 
     <q-dialog v-model="dialogo">
-      <q-card style="min-width: 380px">
-        <q-card-section>
-          <div class="text-h6">{{ editando ? 'Editar Curso' : 'Nuevo Curso' }}</div>
-        </q-card-section>
-        <q-card-section class="q-gutter-md">
-          <q-input v-model="form.nombre" label="Nombre del curso" outlined dense />
-          <q-select v-model="form.profesor" label="Profesor" :options="profesores" outlined dense />
-          <q-input v-model.number="form.horas" label="Horas totales" type="number" outlined dense />
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn color="primary" label="Guardar" unelevated @click="guardar" />
-        </q-card-actions>
+      <q-card class="pdv-dialog">
+        <div class="pdv-dialog-title">{{ editando ? 'Editar Curso' : 'Nuevo Curso' }}</div>
+        <div class="pdv-dialog-body">
+          <q-input v-model="form.nombre" label="Nombre del curso" />
+          <q-select v-model="form.profesor" label="Profesor" :options="profesores" />
+          <q-input v-model.number="form.horas" label="Horas totales" type="number" />
+        </div>
+        <div class="pdv-dialog-actions">
+          <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
+          <q-btn unelevated label="Guardar" class="pdv-btn-save" @click="guardar" />
+        </div>
       </q-card>
     </q-dialog>
   </q-page>
@@ -79,10 +83,10 @@ function abrirDialogo(curso = null) {
 function guardar() {
   if (editando.value) {
     Object.assign(editando.value, form.value)
-    $q.notify({ type: 'positive', message: 'Curso actualizado.' })
+    $q.notify({ type: 'positive', message: 'Curso actualizado.', position: 'top' })
   } else {
     cursos.value.push({ id: Date.now(), alumnos: 0, ...form.value })
-    $q.notify({ type: 'positive', message: 'Curso creado.' })
+    $q.notify({ type: 'positive', message: 'Curso creado.', position: 'top' })
   }
   dialogo.value = false
 }
@@ -95,7 +99,7 @@ function eliminar(curso) {
     cancel: { label: 'Cancelar', flat: true },
   }).onOk(() => {
     cursos.value = cursos.value.filter(c => c.id !== curso.id)
-    $q.notify({ type: 'negative', message: 'Curso eliminado.' })
+    $q.notify({ type: 'negative', message: 'Curso eliminado.', position: 'top' })
   })
 }
 </script>

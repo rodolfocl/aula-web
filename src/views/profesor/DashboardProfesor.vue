@@ -8,7 +8,7 @@
         :key="curso.id"
         class="col-12 col-sm-6 col-lg-4"
       >
-        <q-card flat class="curso-card" style="background: white; border-radius: 12px; border: 1px solid #E8D5B0; overflow: hidden;">
+        <q-card flat class="curso-card" style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
           <!-- Cabecera del curso -->
           <div class="q-pa-md" style="background: #0D1B3E;">
             <div class="text-white text-subtitle1 text-weight-bold">{{ curso.nombre }}</div>

@@ -1,47 +1,44 @@
 <template>
-  <div class="flex flex-center bg-grey-2" style="min-height: 100vh">
-    <q-card class="q-pa-lg" style="min-width: 360px; max-width: 420px; width: 100%">
+  <div class="flex flex-center" style="min-height: 100vh; background: #F0F2F5;">
+    <q-card class="q-pa-lg" style="min-width: 360px; max-width: 420px; width: 100%; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.10);">
       <q-card-section class="text-center q-pb-sm">
-        <q-icon name="school" size="3rem" color="primary" />
-        <div class="text-h5 text-weight-bold text-primary q-mt-sm">Aula PDV</div>
+        <q-icon name="school" size="3rem" style="color: #0D1B3E;" />
+        <div class="text-h5 text-weight-bold q-mt-sm" style="color: #0D1B3E;">Aula PDV</div>
         <div class="text-caption text-grey-6">Ministerio Pan de Vida</div>
       </q-card-section>
 
       <q-card-section>
-        <q-form ref="formRef" @submit.prevent="iniciarSesion" class="q-gutter-md">
+        <q-form ref="formRef" @submit.prevent="iniciarSesion" class="q-gutter-lg">
           <q-input
             v-model="form.email"
             label="Correo electrónico"
             type="email"
-            outlined
-            dense
             :rules="[val => !!val || 'El correo es requerido']"
             autocomplete="email"
           >
-            <template #prepend><q-icon name="email" /></template>
+            <template #prepend><q-icon name="email" style="color: #8B7355;" /></template>
           </q-input>
 
           <q-input
             v-model="form.password"
             label="Contraseña"
             :type="mostrarPassword ? 'text' : 'password'"
-            outlined
-            dense
             :rules="[val => !!val || 'La contraseña es requerida']"
             autocomplete="current-password"
           >
-            <template #prepend><q-icon name="lock" /></template>
+            <template #prepend><q-icon name="lock" style="color: #8B7355;" /></template>
             <template #append>
               <q-icon
                 :name="mostrarPassword ? 'visibility_off' : 'visibility'"
                 class="cursor-pointer"
+                style="color: #8B7355;"
                 @click="mostrarPassword = !mostrarPassword"
               />
             </template>
           </q-input>
 
           <div class="text-right">
-            <router-link :to="{ name: 'ForgotPassword' }" class="text-caption text-primary">
+            <router-link :to="{ name: 'ForgotPassword' }" class="text-caption" style="color: #0D1B3E;">
               ¿Olvidaste tu contraseña?
             </router-link>
           </div>
@@ -53,8 +50,7 @@
           <q-btn
             type="submit"
             label="Ingresar"
-            color="primary"
-            class="full-width"
+            class="full-width pdv-btn-save"
             :loading="cargando"
             unelevated
           />
@@ -63,7 +59,7 @@
 
       <q-card-section class="text-center q-pt-none">
         <span class="text-caption text-grey-6">¿No tienes cuenta?</span>
-        <router-link :to="{ name: 'Register' }" class="text-caption text-primary q-ml-xs">
+        <router-link :to="{ name: 'Register' }" class="text-caption q-ml-xs" style="color: #0D1B3E;">
           Regístrate
         </router-link>
       </q-card-section>

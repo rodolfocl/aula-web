@@ -1,9 +1,9 @@
 <template>
-  <div class="flex flex-center bg-grey-2" style="min-height: 100vh">
-    <q-card class="q-pa-lg" style="min-width: 360px; max-width: 420px; width: 100%">
+  <div class="flex flex-center" style="min-height: 100vh; background: #F0F2F5;">
+    <q-card class="q-pa-lg" style="min-width: 360px; max-width: 420px; width: 100%; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.10);">
       <q-card-section class="text-center q-pb-sm">
-        <q-icon name="school" size="3rem" color="primary" />
-        <div class="text-h5 text-weight-bold text-primary q-mt-sm">Aula PDV</div>
+        <q-icon name="school" size="3rem" style="color: #0D1B3E;" />
+        <div class="text-h5 text-weight-bold q-mt-sm" style="color: #0D1B3E;">Aula PDV</div>
         <div class="text-caption text-grey-6">Recuperar contraseña</div>
       </q-card-section>
 
@@ -17,7 +17,7 @@
           </div>
         </q-card-section>
         <q-card-section class="text-center q-pt-none">
-          <router-link :to="{ name: 'Login' }" class="text-caption text-primary">
+          <router-link :to="{ name: 'Login' }" class="text-caption" style="color: #0D1B3E;">
             Volver al inicio de sesión
           </router-link>
         </q-card-section>
@@ -29,13 +29,11 @@
           <div class="text-caption text-grey-6 q-mb-md">
             Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.
           </div>
-          <q-form ref="formRef" @submit.prevent="enviar" class="q-gutter-md">
+          <q-form ref="formRef" @submit.prevent="enviar" class="q-gutter-lg">
             <q-input
               v-model="form.email"
               label="Correo electrónico"
               type="email"
-              outlined
-              dense
               autofocus
               :rules="[
                 val => !!val || 'El correo es requerido',
@@ -43,7 +41,7 @@
               ]"
               autocomplete="email"
             >
-              <template #prepend><q-icon name="email" /></template>
+              <template #prepend><q-icon name="email" style="color: #8B7355;" /></template>
             </q-input>
 
             <q-banner v-if="error" class="bg-negative text-white rounded-borders" dense>
@@ -53,8 +51,7 @@
             <q-btn
               type="submit"
               label="Enviar enlace"
-              color="primary"
-              class="full-width"
+              class="full-width pdv-btn-save"
               :loading="cargando"
               unelevated
             />
@@ -62,7 +59,7 @@
         </q-card-section>
 
         <q-card-section class="text-center q-pt-none">
-          <router-link :to="{ name: 'Login' }" class="text-caption text-primary">
+          <router-link :to="{ name: 'Login' }" class="text-caption" style="color: #0D1B3E;">
             Volver al inicio de sesión
           </router-link>
         </q-card-section>
@@ -92,7 +89,6 @@ async function enviar() {
     await authService.forgotPassword(form.value.email)
     enviado.value = true
   } catch (err) {
-    // Responder siempre con éxito para no revelar si el email existe
     if (err.response?.status >= 500) {
       error.value = 'Error al conectar con el servidor. Intenta más tarde.'
     } else {
