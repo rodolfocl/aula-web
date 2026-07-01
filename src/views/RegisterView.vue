@@ -4,18 +4,32 @@
       <q-card-section class="text-center q-pb-sm">
         <q-icon name="school" size="3rem" color="primary" />
         <div class="text-h5 text-weight-bold text-primary q-mt-sm">Aula PDV</div>
-        <div class="text-caption text-grey-6">Ministerio Pan de Vida</div>
+        <div class="text-caption text-grey-6">Crear cuenta</div>
       </q-card-section>
 
       <q-card-section>
-        <q-form ref="formRef" @submit.prevent="iniciarSesion" class="q-gutter-md">
+        <q-form ref="formRef" @submit.prevent="registrar" class="q-gutter-md">
+          <q-input
+            v-model="form.nombre"
+            label="Nombre completo"
+            outlined
+            dense
+            :rules="[val => !!val || 'El nombre es requerido']"
+            autocomplete="name"
+          >
+            <template #prepend><q-icon name="person" /></template>
+          </q-input>
+
           <q-input
             v-model="form.email"
             label="Correo electrónico"
             type="email"
             outlined
             dense
-            :rules="[val => !!val || 'El correo es requerido']"
+            :rules="[
+              val => !!val || 'El correo es requerido',
+              val => /.+@.+\..+/.test(val) || 'Correo inválido',
+            ]"
             autocomplete="email"
           >
             <template #prepend><q-icon name="email" /></template>
@@ -27,8 +41,11 @@
             :type="mostrarPassword ? 'text' : 'password'"
             outlined
             dense
-            :rules="[val => !!val || 'La contraseña es requerida']"
-            autocomplete="current-password"
+            :rules="[
+              val => !!val || 'La contraseña es requerida',
+              val => val.length >= 8 || 'Mínimo 8 caracteres',
+            ]"
+            autocomplete="new-password"
           >
             <template #prepend><q-icon name="lock" /></template>
             <template #append>
@@ -40,11 +57,17 @@
             </template>
           </q-input>
 
-          <div class="text-right">
-            <router-link :to="{ name: 'ForgotPassword' }" class="text-caption text-primary">
-              ¿Olvidaste tu contraseña?
-            </router-link>
-          </div>
+          <q-input
+            v-model="form.confirmar"
+            label="Confirmar contraseña"
+            :type="mostrarPassword ? 'text' : 'password'"
+            outlined
+            dense
+            :rules="[val => val === form.password || 'Las contraseñas no coinciden']"
+            autocomplete="new-password"
+          >
+            <template #prepend><q-icon name="lock_outline" /></template>
+          </q-input>
 
           <q-banner v-if="error" class="bg-negative text-white rounded-borders" dense>
             {{ error }}
@@ -52,7 +75,7 @@
 
           <q-btn
             type="submit"
-            label="Ingresar"
+            label="Crear cuenta"
             color="primary"
             class="full-width"
             :loading="cargando"
@@ -62,9 +85,9 @@
       </q-card-section>
 
       <q-card-section class="text-center q-pt-none">
-        <span class="text-caption text-grey-6">¿No tienes cuenta?</span>
-        <router-link :to="{ name: 'Register' }" class="text-caption text-primary q-ml-xs">
-          Regístrate
+        <span class="text-caption text-grey-6">¿Ya tienes cuenta?</span>
+        <router-link :to="{ name: 'Login' }" class="text-caption text-primary q-ml-xs">
+          Iniciar sesión
         </router-link>
       </q-card-section>
     </q-card>
@@ -74,25 +97,19 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/authStore'
+import { useQuasar } from 'quasar'
 import authService from '../services/auth'
 
 const router = useRouter()
-const auth = useAuthStore()
+const $q = useQuasar()
 
 const formRef = ref(null)
-const form = ref({ email: '', password: '' })
+const form = ref({ nombre: '', email: '', password: '', confirmar: '' })
 const mostrarPassword = ref(false)
 const cargando = ref(false)
 const error = ref('')
 
-const DESTINO_POR_ROL = {
-  alumno: '/alumno/dashboard',
-  profesor: '/profesor/dashboard',
-  admin: '/admin/usuarios',
-}
-
-async function iniciarSesion() {
+async function registrar() {
   const valid = await formRef.value.validate()
   if (!valid) return
 
@@ -100,13 +117,15 @@ async function iniciarSesion() {
   cargando.value = true
 
   try {
-    const { token, user } = await authService.login(form.value.email, form.value.password)
-    auth.login(token, user)
-    router.push(DESTINO_POR_ROL[user.rol] ?? '/')
+    await authService.register(form.value.nombre, form.value.email, form.value.password)
+    $q.notify({ type: 'positive', message: 'Cuenta creada. Ahora puedes iniciar sesión.' })
+    router.push({ name: 'Login' })
   } catch (err) {
     const status = err.response?.status
-    if (status === 401 || status === 400) {
-      error.value = 'Correo o contraseña incorrectos.'
+    if (status === 409) {
+      error.value = 'Ya existe una cuenta con ese correo.'
+    } else if (status === 400) {
+      error.value = err.response?.data?.message ?? 'Datos inválidos.'
     } else {
       error.value = 'Error al conectar con el servidor. Intenta más tarde.'
     }

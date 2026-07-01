@@ -9,7 +9,16 @@
         </q-toolbar-title>
         <q-space />
         <div class="q-mr-sm text-caption">
-          {{ auth.user?.nombre }} ({{ auth.userRole }})
+          {{ auth.user?.nombre }}
+          <q-chip
+            v-for="rol in auth.userRoles"
+            :key="rol"
+            dense
+            size="xs"
+            color="white"
+            text-color="primary"
+            class="q-ml-xs"
+          >{{ rol }}</q-chip>
         </div>
         <q-btn flat round dense icon="logout" @click="cerrarSesion" />
       </q-toolbar>
@@ -19,21 +28,24 @@
       <q-list padding>
         <q-item-label header class="text-grey-7">Menú</q-item-label>
 
-        <template v-if="auth.userRole === 'alumno'">
+        <template v-if="auth.hasRole('alumno')">
+          <q-item-label header class="text-grey-5 text-caption q-pt-sm">Alumno</q-item-label>
           <q-item clickable v-ripple :to="{ name: 'AlumnoDashboard' }">
             <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
             <q-item-section>Mi Dashboard</q-item-section>
           </q-item>
         </template>
 
-        <template v-if="auth.userRole === 'profesor'">
+        <template v-if="auth.hasRole('profesor')">
+          <q-item-label header class="text-grey-5 text-caption q-pt-sm">Profesor</q-item-label>
           <q-item clickable v-ripple :to="{ name: 'ProfesorDashboard' }">
             <q-item-section avatar><q-icon name="school" /></q-item-section>
             <q-item-section>Mis Cursos</q-item-section>
           </q-item>
         </template>
 
-        <template v-if="auth.userRole === 'admin'">
+        <template v-if="auth.hasRole('administrador')">
+          <q-item-label header class="text-grey-5 text-caption q-pt-sm">Administración</q-item-label>
           <q-item clickable v-ripple :to="{ name: 'AdminUsuarios' }">
             <q-item-section avatar><q-icon name="people" /></q-item-section>
             <q-item-section>Usuarios</q-item-section>

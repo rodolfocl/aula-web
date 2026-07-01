@@ -9,6 +9,18 @@ const routes = [
     meta: { public: true },
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../views/RegisterView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('../views/ForgotPasswordView.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/',
     component: () => import('../layouts/MainLayout.vue'),
     meta: { requiresAuth: true },
@@ -17,21 +29,19 @@ const routes = [
         path: '',
         redirect: () => {
           const auth = useAuthStore()
-          const rol = auth.userRole
-          if (rol === 'alumno') return '/alumno/dashboard'
-          if (rol === 'profesor') return '/profesor/dashboard'
-          if (rol === 'admin') return '/admin/usuarios'
+          const roles = auth.userRoles
+          if (roles.includes('administrador')) return '/admin/usuarios'
+          if (roles.includes('profesor')) return '/profesor/dashboard'
+          if (roles.includes('alumno')) return '/alumno/dashboard'
           return '/login'
         },
       },
-      // Rutas alumno
       {
         path: 'alumno/dashboard',
         name: 'AlumnoDashboard',
         component: () => import('../views/alumno/DashboardAlumno.vue'),
         meta: { rol: 'alumno' },
       },
-      // Rutas profesor
       {
         path: 'profesor/dashboard',
         name: 'ProfesorDashboard',
@@ -44,24 +54,23 @@ const routes = [
         component: () => import('../views/profesor/PasarAsistencia.vue'),
         meta: { rol: 'profesor' },
       },
-      // Rutas admin
       {
         path: 'admin/usuarios',
         name: 'AdminUsuarios',
         component: () => import('../views/admin/AdminUsuarios.vue'),
-        meta: { rol: 'admin' },
+        meta: { rol: 'administrador' },
       },
       {
         path: 'admin/cursos',
         name: 'AdminCursos',
         component: () => import('../views/admin/AdminCursos.vue'),
-        meta: { rol: 'admin' },
+        meta: { rol: 'administrador' },
       },
       {
         path: 'admin/instancias',
         name: 'AdminInstancias',
         component: () => import('../views/admin/AdminInstancias.vue'),
-        meta: { rol: 'admin' },
+        meta: { rol: 'administrador' },
       },
     ],
   },
@@ -83,7 +92,7 @@ router.beforeEach((to) => {
 
   if (!auth.isAuthenticated) return { name: 'Login' }
 
-  if (to.meta.rol && auth.userRole !== to.meta.rol) {
+  if (to.meta.rol && !auth.hasRole(to.meta.rol)) {
     return { name: 'Login' }
   }
 

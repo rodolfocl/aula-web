@@ -6,7 +6,8 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
 
   const isAuthenticated = computed(() => !!token.value)
-  const userRole = computed(() => user.value?.rol || null)
+  const userRoles = computed(() => user.value?.roles ?? [])
+  const hasRole = (rol) => userRoles.value.includes(rol)
 
   function login(tokenValue, userData) {
     token.value = tokenValue
@@ -22,5 +23,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('user')
   }
 
-  return { token, user, isAuthenticated, userRole, login, logout }
+  return { token, user, isAuthenticated, userRoles, hasRole, login, logout }
 })
