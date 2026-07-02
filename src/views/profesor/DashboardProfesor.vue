@@ -68,9 +68,19 @@
                       </div>
                       <div style="flex: 1; min-width: 0;">
                         <div style="font-size: 14px; color: #0D1B3E; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ alumno.full_name }}</div>
-                        <div style="font-size: 12px; color: #888888;">{{ alumno.absence_count === 0 ? 'Sin ausencias' : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}</div>
+                        <div style="font-size: 12px; color: #888888;">{{ Number(alumno.absence_count) === 0 ? 'Sin ausencias' : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}</div>
                       </div>
-                      <span :style="badgeStyle(alumno.absence_count)">{{ badgeLabel(alumno.absence_count) }}</span>
+                      <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                        <span :style="badgeStyle(alumno.absence_count)">{{ badgeLabel(alumno.absence_count) }}</span>
+                        <q-icon
+                          v-if="inst.max_absences != null && Number(alumno.absence_count) > Number(inst.max_absences)"
+                          name="error"
+                          size="18px"
+                          style="color: #C0392B;"
+                        >
+                          <q-tooltip class="pdv-tooltip">Alumno reprobado por asistencia</q-tooltip>
+                        </q-icon>
+                      </div>
                     </div>
                   </div>
                   <EmptyState v-else icon="👤" message="No hay alumnos inscritos en este curso" />
@@ -144,9 +154,19 @@
                       </div>
                       <div style="flex: 1; min-width: 0;">
                         <div style="font-size: 14px; color: #0D1B3E; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ alumno.full_name }}</div>
-                        <div style="font-size: 12px; color: #888888;">{{ alumno.absence_count === 0 ? 'Sin ausencias' : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}</div>
+                        <div style="font-size: 12px; color: #888888;">{{ Number(alumno.absence_count) === 0 ? 'Sin ausencias' : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}</div>
                       </div>
-                      <span :style="badgeStyle(alumno.absence_count)">{{ badgeLabel(alumno.absence_count) }}</span>
+                      <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                        <span :style="badgeStyle(alumno.absence_count)">{{ badgeLabel(alumno.absence_count) }}</span>
+                        <q-icon
+                          v-if="inst.max_absences != null && Number(alumno.absence_count) > Number(inst.max_absences)"
+                          name="error"
+                          size="18px"
+                          style="color: #C0392B;"
+                        >
+                          <q-tooltip class="pdv-tooltip">Alumno reprobado por asistencia</q-tooltip>
+                        </q-icon>
+                      </div>
                     </div>
                   </div>
                   <EmptyState v-else icon="👤" message="No hay alumnos inscritos en este curso" />
@@ -297,15 +317,18 @@ function iniciales(nombre) {
 }
 
 function badgeLabel(faltas) {
-  if (faltas === 0) return 'Al día'
-  if (faltas === 1) return '1 falta'
-  return `${faltas} faltas`
+  const n = Number(faltas) || 0
+  if (n === 0) return '0 faltas'
+  if (n === 1) return '1 falta'
+  return `${n} faltas`
 }
 
 function badgeStyle(faltas) {
-  if (faltas === 0) return 'background: #E8F5E9; color: #1B5E20; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
-  if (faltas <= 2)  return 'background: #FFF8E1; color: #7A5C00; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
-  return 'background: #FFEBEE; color: #7F0000; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
+  const n = Number(faltas) || 0
+  const base = 'padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
+  if (n === 0) return `background: #E8F5E9; color: #27AE60; ${base}`
+  if (n <= 2)  return `background: #FFF8E1; color: #E67E22; ${base}`
+  return `background: #FFEBEE; color: #C0392B; ${base}`
 }
 
 const alumnosFiltrados = computed(() => {

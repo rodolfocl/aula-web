@@ -94,7 +94,17 @@
                 <td class="td-add" />
 
                 <td class="td-faltas">
-                  <span :style="faltasStyle(calcFaltas(fila))">{{ calcFaltas(fila) }}</span>
+                  <div class="faltas-cell">
+                    <span :style="faltasStyle(calcFaltas(fila))">{{ calcFaltas(fila) }}</span>
+                    <q-icon
+                      v-if="esReprobadoPorAsistencia(fila)"
+                      name="error"
+                      size="18px"
+                      style="color: #C0392B;"
+                    >
+                      <q-tooltip class="pdv-tooltip">Alumno reprobado por asistencia</q-tooltip>
+                    </q-icon>
+                  </div>
                 </td>
 
               </tr>
@@ -228,9 +238,15 @@ function calcFaltas(fila) {
 }
 
 function faltasStyle(n) {
-  if (n === 0) return 'color: #BDBDBD; font-weight: 500;'
+  if (n === 0) return 'color: #27AE60; font-weight: 600;'
   if (n <= 2)  return 'color: #E67E22; font-weight: 700; font-size: 15px;'
   return 'color: #C0392B; font-weight: 700; font-size: 15px;'
+}
+
+function esReprobadoPorAsistencia(fila) {
+  const max = instancia.value?.max_absences
+  if (max == null) return false
+  return calcFaltas(fila) > max
 }
 
 function iniciales(nombre) {
@@ -421,6 +437,12 @@ tbody .th-sticky { background: white; }
 
 .td-add    { width: 44px; }
 .td-faltas { text-align: center; padding: 10px 16px; }
+.faltas-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+}
 
 /* ── Edición inline de fecha ── */
 .fecha-click {
