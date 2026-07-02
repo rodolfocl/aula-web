@@ -26,10 +26,27 @@
         :loading="cargando"
         no-data-label="No hay usuarios registrados"
       >
+        <template #top-left>
+          <q-toggle
+            v-model="mostrarInactivos"
+            label="Mostrar inactivos"
+            color="primary"
+            style="font-size: 13px; color: #555555;"
+          />
+        </template>
+
         <template #top-right>
           <q-input v-model="filtro" outlined dense placeholder="Buscar..." clearable>
             <template #prepend><q-icon name="search" /></template>
           </q-input>
+        </template>
+
+        <template #body-cell-full_name="props">
+          <q-td :props="props">
+            <span :style="props.row.active === false ? 'color: #AAAAAA;' : 'color: #0D1B3E;'">
+              {{ props.row.full_name }}
+            </span>
+          </q-td>
         </template>
 
         <template #body-cell-roles="props">
@@ -60,6 +77,7 @@
 
         <template #body-cell-acciones="props">
           <q-td :props="props" class="q-gutter-xs">
+            <!-- Editar -->
             <div style="position: relative; display: inline-flex;">
               <q-btn
                 flat round dense icon="edit" size="sm"
@@ -70,16 +88,36 @@
                 <q-tooltip class="pdv-tooltip">Solo los administradores pueden editar</q-tooltip>
               </div>
             </div>
-            <div style="position: relative; display: inline-flex;">
-              <q-btn
-                flat round dense icon="delete" size="sm"
-                :style="isAdmin ? 'color: #C0392B;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
-                @click="eliminar(props.row)"
-              />
-              <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
-                <q-tooltip class="pdv-tooltip">Solo los administradores pueden eliminar</q-tooltip>
+
+            <!-- Reactivar (solo si inactivo) -->
+            <template v-if="props.row.active === false">
+              <div style="position: relative; display: inline-flex;">
+                <q-btn
+                  flat round dense icon="person_add" size="sm"
+                  :style="isAdmin ? 'color: #2E7D32;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
+                  @click="reactivar(props.row)"
+                >
+                  <q-tooltip class="pdv-tooltip">Reactivar usuario</q-tooltip>
+                </q-btn>
+                <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+                  <q-tooltip class="pdv-tooltip">Solo los administradores pueden reactivar</q-tooltip>
+                </div>
               </div>
-            </div>
+            </template>
+
+            <!-- Desactivar (solo si activo) -->
+            <template v-else>
+              <div style="position: relative; display: inline-flex;">
+                <q-btn
+                  flat round dense icon="person_off" size="sm"
+                  :style="isAdmin ? 'color: #C0392B;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
+                  @click="pedirDesactivar(props.row)"
+                />
+                <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+                  <q-tooltip class="pdv-tooltip">Solo los administradores pueden desactivar</q-tooltip>
+                </div>
+              </div>
+            </template>
           </q-td>
         </template>
 
@@ -122,25 +160,24 @@
       </q-card>
     </q-dialog>
 
-    <!-- Modal confirmar eliminación -->
-    <q-dialog v-model="dialogoEliminar">
+    <!-- Modal confirmar desactivar -->
+    <q-dialog v-model="dialogoDesactivar">
       <q-card class="pdv-dialog">
-        <div class="pdv-dialog-title" style="color: #C0392B;">Eliminar usuario</div>
+        <div class="pdv-dialog-title" style="color: #C0392B;">Desactivar usuario</div>
         <div class="pdv-dialog-body">
           <p style="margin: 0; font-size: 15px; color: #333333; line-height: 1.5;">
-            ¿Estás seguro que deseas eliminar a
-            <strong>{{ usuarioAEliminar?.full_name }}</strong>?
-            Esta acción no se puede deshacer.
+            ¿Desactivar a <strong>{{ usuarioADesactivar?.full_name }}</strong>?
+            El usuario no podrá iniciar sesión pero su historial se conserva.
           </p>
         </div>
         <div class="pdv-dialog-actions">
           <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
           <q-btn
             unelevated
-            label="Eliminar"
-            :loading="eliminando"
+            label="Desactivar"
+            :loading="procesando"
             style="background: #C0392B; color: white; border-radius: 6px; padding: 0 24px; font-weight: 600;"
-            @click="confirmarEliminar"
+            @click="confirmarDesactivar"
           />
         </div>
       </q-card>
@@ -149,7 +186,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
@@ -160,13 +197,14 @@ const auth = useAuthStore()
 const { isAdmin } = usePermissions()
 
 const filtro = ref('')
+const mostrarInactivos = ref(false)
 const dialogo = ref(false)
 const editando = ref(null)
 const cargando = ref(false)
 const guardando = ref(false)
-const dialogoEliminar = ref(false)
-const usuarioAEliminar = ref(null)
-const eliminando = ref(false)
+const dialogoDesactivar = ref(false)
+const usuarioADesactivar = ref(null)
+const procesando = ref(false)
 
 const opcionesRoles = [
   { label: 'Alumno', value: 'alumno' },
@@ -188,7 +226,8 @@ const form = ref({ full_name: '', email: '', password: '', roles: [] })
 async function cargarUsuarios() {
   cargando.value = true
   try {
-    const { data } = await api.get('/users')
+    const params = mostrarInactivos.value ? { includeInactive: true } : {}
+    const { data } = await api.get('/users', { params })
     usuarios.value = data
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo cargar la lista de usuarios.', position: 'top' })
@@ -198,6 +237,7 @@ async function cargarUsuarios() {
 }
 
 onMounted(cargarUsuarios)
+watch(mostrarInactivos, cargarUsuarios)
 
 function abrirDialogo(usuario = null) {
   editando.value = usuario
@@ -244,26 +284,46 @@ async function guardar() {
   }
 }
 
-function eliminar(usuario) {
+function pedirDesactivar(usuario) {
   if (usuario.id === auth.user?.id) {
-    $q.notify({ type: 'warning', message: 'No puedes eliminar tu propio usuario.', position: 'top' })
+    $q.notify({ type: 'warning', message: 'No puedes desactivar tu propio usuario.', position: 'top' })
     return
   }
-  usuarioAEliminar.value = usuario
-  dialogoEliminar.value = true
+  usuarioADesactivar.value = usuario
+  dialogoDesactivar.value = true
 }
 
-async function confirmarEliminar() {
-  eliminando.value = true
+async function confirmarDesactivar() {
+  procesando.value = true
   try {
-    await api.delete(`/users/${usuarioAEliminar.value.id}`)
+    await api.patch(`/users/${usuarioADesactivar.value.id}`, { active: false })
     await cargarUsuarios()
-    dialogoEliminar.value = false
-    $q.notify({ type: 'positive', message: 'Usuario eliminado correctamente.', position: 'top' })
+    dialogoDesactivar.value = false
+    $q.notify({ type: 'positive', message: 'Usuario desactivado.', position: 'top' })
   } catch {
-    $q.notify({ type: 'negative', message: 'No se pudo eliminar el usuario.', position: 'top' })
+    $q.notify({ type: 'negative', message: 'No se pudo desactivar el usuario.', position: 'top' })
   } finally {
-    eliminando.value = false
+    procesando.value = false
+  }
+}
+
+async function reactivar(usuario) {
+  try {
+    await api.patch(`/users/${usuario.id}`, { active: true })
+    await cargarUsuarios()
+    $q.notify({ type: 'positive', message: 'Usuario reactivado.', position: 'top' })
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo reactivar el usuario.', position: 'top' })
   }
 }
 </script>
+
+<style>
+.pdv-tooltip {
+  background: #0D1B3E;
+  color: white;
+  font-size: 12px;
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+</style>
