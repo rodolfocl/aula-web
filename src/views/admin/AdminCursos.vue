@@ -27,14 +27,7 @@
     </div>
 
     <!-- Sin cursos -->
-    <div
-      v-else-if="cursos.length === 0"
-      class="column items-center q-mt-xl"
-      style="color: #9E9E9E;"
-    >
-      <q-icon name="menu_book" size="48px" style="opacity: 0.4;" />
-      <div class="q-mt-sm text-body1">No hay cursos registrados</div>
-    </div>
+    <EmptyState v-else-if="cursos.length === 0" icon="📚" message="No hay cursos registrados" />
 
     <!-- Grilla de cursos -->
     <div v-else class="row q-col-gutter-md items-stretch">
@@ -146,6 +139,7 @@ import { ref, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
 import { usePermissions } from '../../composables/usePermissions'
+import EmptyState from '../../components/EmptyState.vue'
 
 const $q = useQuasar()
 const { isAdmin } = usePermissions()

@@ -21,8 +21,11 @@
         row-key="id"
         flat
         :loading="cargando"
-        no-data-label="No hay instancias registradas"
       >
+        <template #no-data>
+          <EmptyState icon="📅" message="No hay instancias registradas" />
+        </template>
+
         <template #loading>
           <q-inner-loading showing>
             <q-spinner-dots color="primary" size="40px" />
@@ -165,6 +168,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
 import { usePermissions } from '../../composables/usePermissions'
+import EmptyState from '../../components/EmptyState.vue'
 
 const $q = useQuasar()
 const { isAdmin } = usePermissions()
@@ -239,12 +243,16 @@ async function cargarInstancias() {
 
 onMounted(async () => {
   await cargarInstancias()
-  const [{ data: c }, { data: u }] = await Promise.all([
-    api.get('/courses', { params: { includeInactive: false } }),
-    api.get('/users'),
-  ])
-  cursos.value = c
-  profesores.value = u
+  try {
+    const [{ data: c }, { data: u }] = await Promise.all([
+      api.get('/courses', { params: { includeInactive: false } }),
+      api.get('/users'),
+    ])
+    cursos.value = c
+    profesores.value = u
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo cargar los datos del formulario.', position: 'top' })
+  }
 })
 
 function abrirDialogo(instancia = null) {

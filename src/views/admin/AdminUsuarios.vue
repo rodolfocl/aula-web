@@ -24,7 +24,6 @@
         flat
         :filter="filtro"
         :loading="cargando"
-        no-data-label="No hay usuarios registrados"
       >
         <template #top-left>
           <q-toggle
@@ -121,6 +120,14 @@
           </q-td>
         </template>
 
+        <template #no-data>
+          <EmptyState icon="👥" message="No hay usuarios registrados" />
+        </template>
+
+        <template #no-results>
+          <EmptyState icon="🔍" message="No se encontraron usuarios con ese criterio" />
+        </template>
+
         <template #loading>
           <q-inner-loading showing>
             <q-spinner-dots color="primary" size="40px" />
@@ -191,6 +198,7 @@ import { useQuasar } from 'quasar'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import { usePermissions } from '../../composables/usePermissions'
+import EmptyState from '../../components/EmptyState.vue'
 
 const $q = useQuasar()
 const auth = useAuthStore()

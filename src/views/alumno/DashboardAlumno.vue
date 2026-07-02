@@ -6,6 +6,8 @@
       <q-spinner-dots color="primary" size="48px" />
     </div>
 
+    <EmptyState v-else-if="inscripciones.length === 0" icon="🎓" message="No tienes cursos en tu historial aún" />
+
     <template v-else>
       <!-- En curso -->
       <div class="q-mb-lg">
@@ -13,9 +15,7 @@
           <q-icon name="menu_book" class="q-mr-xs" style="color: #C9A96E;" />
           En curso
         </div>
-        <div v-if="enCurso.length === 0" class="text-body2 q-pa-md" style="color: #9E9E9E;">
-          No tienes cursos activos actualmente.
-        </div>
+        <EmptyState v-if="enCurso.length === 0" icon="📖" message="No tienes cursos activos actualmente" />
         <q-card v-else flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
           <q-list separator>
             <q-item v-for="e in enCurso" :key="e.id">
@@ -90,6 +90,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+import EmptyState from '../../components/EmptyState.vue'
 
 const $q = useQuasar()
 const auth = useAuthStore()

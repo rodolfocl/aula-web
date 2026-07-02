@@ -6,10 +6,7 @@
       <q-spinner-dots color="primary" size="48px" />
     </div>
 
-    <div v-else-if="instancias.length === 0" class="column items-center q-mt-xl" style="color: #9E9E9E;">
-      <q-icon name="school" size="48px" style="opacity: 0.4;" />
-      <div class="q-mt-sm text-body1">No tienes cursos asignados actualmente.</div>
-    </div>
+    <EmptyState v-else-if="instancias.length === 0" icon="🏫" message="No tienes clases asignadas actualmente" />
 
     <div v-else class="row q-col-gutter-md">
       <div v-for="inst in instancias" :key="inst.id" class="col-12 col-sm-6 col-lg-4">
@@ -57,7 +54,7 @@
               <span :style="badgeStyle(alumno.absence_count)">{{ badgeLabel(alumno.absence_count) }}</span>
             </div>
           </div>
-          <div v-else class="text-caption q-pa-md" style="color: #9E9E9E;">Sin alumnos inscritos.</div>
+          <EmptyState v-else icon="👤" message="No hay alumnos inscritos en este curso" />
 
           <!-- Acciones solo en instancias activas -->
           <template v-if="esActivo(inst)">
@@ -123,6 +120,7 @@ import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+import EmptyState from '../../components/EmptyState.vue'
 
 const $q = useQuasar()
 const auth = useAuthStore()
