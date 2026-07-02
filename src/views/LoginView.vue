@@ -96,8 +96,8 @@ const cargando = ref(false)
 const error = ref('')
 
 const DESTINO_POR_ROL = {
-  alumno: '/alumno/dashboard',
-  profesor: '/profesor/dashboard',
+  alumno: '/alumno/historial',
+  profesor: '/profesor/sesion',
   admin: '/admin/usuarios',
 }
 

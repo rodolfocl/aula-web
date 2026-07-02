@@ -4,7 +4,7 @@
     <!-- Cabecera -->
     <div class="row items-center justify-between q-mb-lg">
       <div class="row items-center">
-        <q-btn flat round dense icon="arrow_back" :to="{ name: 'ProfesorDashboard' }" style="color: #0D1B3E;" class="q-mr-sm" />
+        <q-btn flat round dense icon="arrow_back" :to="{ name: 'ProfesorSesion' }" style="color: #0D1B3E;" class="q-mr-sm" />
         <div>
           <div class="text-h6 text-weight-bold" style="color: #0D1B3E;">Pasar Asistencia</div>
           <div class="text-caption q-mt-xs" style="color: #8B7355;">

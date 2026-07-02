@@ -35,7 +35,7 @@
                   <div class="row items-start justify-between no-wrap q-gutter-xs">
                     <div class="text-white text-subtitle1 text-weight-bold" style="flex: 1;">{{ inst.course_name }}</div>
                   </div>
-                  <div class="text-caption q-mt-xs" style="color: #C9A96E;">{{ inst.year }} · Período {{ inst.period }}</div>
+                  <div class="text-caption text-weight-bold q-mt-xs" style="color: #C9A96E;">{{ inst.year }} · Período {{ inst.period }}</div>
                 </div>
                 <div class="row items-center justify-between q-px-md q-py-sm">
                   <div style="display: flex; align-items: center; gap: 7px; color: #0D1B3E; font-size: 15px; font-weight: 600;">
@@ -132,7 +132,7 @@
                       Finalizado
                     </q-badge>
                   </div>
-                  <div class="text-caption q-mt-xs" style="color: #C9A96E;">{{ inst.year }} · Período {{ inst.period }}</div>
+                  <div class="text-caption text-weight-bold q-mt-xs" style="color: #C9A96E;">{{ inst.year }} · Período {{ inst.period }}</div>
                 </div>
                 <div class="q-px-md q-py-sm" style="display: flex; align-items: center; gap: 7px; color: #0D1B3E; font-size: 15px; font-weight: 600;">
                   <q-icon name="people" size="20px" style="color: #0D1B3E;" />

@@ -48,13 +48,13 @@
           <q-item
             clickable
             v-ripple
-            :to="{ name: 'AlumnoDashboard' }"
+            :to="{ name: 'AlumnoHistorial' }"
             class="sidebar-item"
-            :class="{ 'sidebar-item-active': isActive('AlumnoDashboard') }"
+            :class="{ 'sidebar-item-active': isActive('AlumnoHistorial') }"
           >
             <i
               class="ti ti-history"
-              :style="`font-size: 22px; color: ${isActive('AlumnoDashboard') ? '#C9A96E' : '#FFFFFF'};`"
+              :style="`font-size: 22px; color: ${isActive('AlumnoHistorial') ? '#C9A96E' : '#FFFFFF'};`"
             />
             <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
               Mi Historial
@@ -68,13 +68,13 @@
           <q-item
             clickable
             v-ripple
-            :to="{ name: 'ProfesorDashboard' }"
+            :to="{ name: 'ProfesorSesion' }"
             class="sidebar-item"
-            :class="{ 'sidebar-item-active': isActive('ProfesorDashboard') || isActive('PasarAsistencia') }"
+            :class="{ 'sidebar-item-active': isActive('ProfesorSesion') || isActive('PasarAsistencia') }"
           >
             <i
               class="ti ti-chalkboard"
-              :style="`font-size: 22px; color: ${isActive('ProfesorDashboard') || isActive('PasarAsistencia') ? '#C9A96E' : '#FFFFFF'};`"
+              :style="`font-size: 22px; color: ${isActive('ProfesorSesion') || isActive('PasarAsistencia') ? '#C9A96E' : '#FFFFFF'};`"
             />
             <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
               Vista Profesor

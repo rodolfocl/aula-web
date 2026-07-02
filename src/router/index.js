@@ -37,20 +37,20 @@ const routes = [
           const auth = useAuthStore()
           const roles = auth.userRoles
           if (roles.includes('administrador')) return '/admin/usuarios'
-          if (roles.includes('profesor')) return '/profesor/dashboard'
-          if (roles.includes('alumno')) return '/alumno/dashboard'
+          if (roles.includes('profesor')) return '/profesor/sesion'
+          if (roles.includes('alumno')) return '/alumno/historial'
           return '/login'
         },
       },
       {
-        path: 'alumno/dashboard',
-        name: 'AlumnoDashboard',
+        path: 'alumno/historial',
+        name: 'AlumnoHistorial',
         component: () => import('../views/alumno/DashboardAlumno.vue'),
         meta: { rol: 'alumno' },
       },
       {
-        path: 'profesor/dashboard',
-        name: 'ProfesorDashboard',
+        path: 'profesor/sesion',
+        name: 'ProfesorSesion',
         component: () => import('../views/profesor/DashboardProfesor.vue'),
         meta: { rol: 'profesor' },
       },
