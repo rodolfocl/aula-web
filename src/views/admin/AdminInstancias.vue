@@ -21,6 +21,8 @@
         row-key="id"
         flat
         :loading="cargando"
+        :pagination="{ rowsPerPage: 15 }"
+        :rows-per-page-options="[5, 10, 15, 25, 50, 0]"
       >
         <template #no-data>
           <EmptyState icon="📅" message="No hay instancias registradas" />

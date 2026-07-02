@@ -24,6 +24,8 @@
         flat
         :filter="filtro"
         :loading="cargando"
+        :pagination="{ rowsPerPage: 15 }"
+        :rows-per-page-options="[5, 10, 15, 25, 50, 0]"
       >
         <template #top-left>
           <q-toggle
