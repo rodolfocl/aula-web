@@ -82,12 +82,21 @@
                 </td>
 
                 <td v-for="ev in evaluaciones" :key="ev.id" class="td-nota">
+                  <q-tooltip
+                    v-if="hasError(fila.enrollment_id, ev.id)"
+                    :target="true"
+                    anchor="top middle"
+                    self="bottom middle"
+                    class="pdv-tooltip"
+                  >
+                    Rango válido: 1.0 – 7.0
+                  </q-tooltip>
                   <input
                     type="number" min="1.0" max="7.0" step="0.1" placeholder="—"
-                    class="nota-input"
+                    :class="['nota-input', hasError(fila.enrollment_id, ev.id) && 'nota-input--error']"
                     :value="fila.notas[ev.id]"
-                    :style="inputStyle(fila.notas[ev.id])"
-                    @change="setNota(fila, ev.id, $event.target.value)"
+                    :style="hasError(fila.enrollment_id, ev.id) ? {} : inputStyle(fila.notas[ev.id])"
+                    @blur="setNota(fila, ev.id, $event.target.value)"
                   />
                 </td>
 
@@ -162,6 +171,35 @@ function formatFechaCorta(fecha) {
   return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' })
 }
 
+// ── Normalización (helper reutilizable) ───────────────────────────────────────
+// Devuelve { value: number|null, valid: boolean }
+function normalizeGrade(raw) {
+  const trimmed = String(raw ?? '').trim()
+  if (trimmed === '') return { value: null, valid: true }
+  const n = parseFloat(trimmed)
+  if (isNaN(n)) return { value: null, valid: false }
+  const rounded = Math.round(n * 10) / 10
+  if (rounded < 1.0 || rounded > 7.0) return { value: null, valid: false }
+  return { value: rounded, valid: true }
+}
+
+// ── Estado de error por celda (flash 1.5s) ────────────────────────────────────
+const errorCells = ref({})
+
+function flashError(enrollmentId, evalId) {
+  const key = `${enrollmentId}:${evalId}`
+  errorCells.value = { ...errorCells.value, [key]: true }
+  setTimeout(() => {
+    const next = { ...errorCells.value }
+    delete next[key]
+    errorCells.value = next
+  }, 1500)
+}
+
+function hasError(enrollmentId, evalId) {
+  return !!errorCells.value[`${enrollmentId}:${evalId}`]
+}
+
 function inputStyle(nota) {
   const n = parseFloat(nota)
   if (nota === null || nota === '' || isNaN(n)) return {}
@@ -212,8 +250,9 @@ async function guardarNombre(ev) {
 // ── Celdas ────────────────────────────────────────────────────────────────────
 
 function setNota(fila, evalId, raw) {
-  const trimmed = String(raw).trim()
-  fila.notas[evalId] = trimmed === '' ? null : parseFloat(trimmed) || null
+  const { value, valid } = normalizeGrade(raw)
+  if (!valid) flashError(fila.enrollment_id, evalId)
+  fila.notas[evalId] = value
 }
 
 const hayNotas = computed(() =>
@@ -243,11 +282,12 @@ async function cargarTabla() {
 
 async function guardar() {
   for (const fila of filas.value) {
-    for (const nota of Object.values(fila.notas)) {
+    for (const [evalId, nota] of Object.entries(fila.notas)) {
       if (nota === null) continue
-      const n = parseFloat(nota)
-      if (isNaN(n) || n < 1.0 || n > 7.0) {
-        $q.notify({ type: 'negative', message: `Nota ${nota} fuera del rango 1.0–7.0.`, position: 'top' })
+      const { valid } = normalizeGrade(nota)
+      if (!valid) {
+        flashError(fila.enrollment_id, evalId)
+        $q.notify({ type: 'negative', message: 'Hay notas fuera del rango 1.0–7.0. Corrígelas antes de guardar.', position: 'top' })
         return
       }
     }
@@ -257,8 +297,9 @@ async function guardar() {
     .map(ev => ({
       evaluationId: ev.id,
       grades: filas.value
-        .filter(f => f.notas[ev.id] !== null && !isNaN(parseFloat(f.notas[ev.id])))
-        .map(f => ({ enrollment_id: f.enrollment_id, grade: parseFloat(parseFloat(f.notas[ev.id]).toFixed(1)) })),
+        .map(f => ({ enrollment_id: f.enrollment_id, raw: f.notas[ev.id] }))
+        .filter(({ raw }) => raw !== null && !isNaN(parseFloat(raw)))
+        .map(({ enrollment_id, raw }) => ({ enrollment_id, grade: normalizeGrade(raw).value })),
     }))
     .filter(p => p.grades.length > 0)
 
@@ -447,6 +488,20 @@ tbody .th-sticky { background: white; }
 .nota-input:focus {
   border-color: #0D1B3E;
   box-shadow: 0 0 0 2px rgba(13, 27, 62, 0.08);
+}
+
+.nota-input--error {
+  border-color: #C0392B !important;
+  background: #FFEBEE !important;
+  color: #7F0000 !important;
+  animation: shake 0.35s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-4px); }
+  60%       { transform: translateX(4px); }
+  80%       { transform: translateX(-2px); }
 }
 
 .td-add { width: 44px; }
