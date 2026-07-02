@@ -77,14 +77,24 @@
                 </div>
                 <q-separator style="border-color: rgba(0,0,0,0.06);" />
                 <q-card-actions class="column q-pa-sm q-gutter-xs">
-                  <q-btn
-                    unelevated
-                    icon="how_to_reg"
-                    label="Pasar asistencia"
-                    :to="{ name: 'PasarAsistencia', params: { id: inst.id } }"
-                    style="background: #0D1B3E; color: white; border-radius: 8px;"
-                    class="q-px-md full-width"
-                  />
+                  <div class="row q-gutter-xs full-width" style="margin-left: 0;">
+                    <q-btn
+                      unelevated
+                      icon="how_to_reg"
+                      label="Asistencia"
+                      :to="{ name: 'PasarAsistencia', params: { id: inst.id } }"
+                      style="background: #0D1B3E; color: white; border-radius: 8px; flex: 1;"
+                      class="q-px-xs"
+                    />
+                    <q-btn
+                      unelevated
+                      icon="edit"
+                      label="Notas"
+                      :to="{ name: 'RegistrarNotas', params: { id: inst.id } }"
+                      style="background: #0D1B3E; color: white; border-radius: 8px; flex: 1;"
+                      class="q-px-xs"
+                    />
+                  </div>
                   <q-btn
                     flat
                     dense

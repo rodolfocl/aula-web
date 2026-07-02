@@ -159,7 +159,7 @@ async function guardar() {
   guardando.value = true
   try {
     const { data: sesion } = await api.post('/sessions', {
-      offering_id: Number(route.params.id),
+      offering_id: route.params.id,
       scheduled_at: new Date().toISOString(),
       title: `Clase del ${fechaHoy.value}`,
     })

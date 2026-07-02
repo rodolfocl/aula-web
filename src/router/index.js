@@ -61,6 +61,12 @@ const routes = [
         meta: { rol: 'profesor' },
       },
       {
+        path: 'profesor/curso/:id/notas',
+        name: 'RegistrarNotas',
+        component: () => import('../views/profesor/RegistrarNotas.vue'),
+        meta: { rol: 'profesor' },
+      },
+      {
         path: 'admin/usuarios',
         name: 'AdminUsuarios',
         component: () => import('../views/admin/AdminUsuarios.vue'),
