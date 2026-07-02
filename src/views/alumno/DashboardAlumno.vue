@@ -1,93 +1,114 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="text-h5 text-weight-bold text-primary q-mb-md">Mi Dashboard</div>
+  <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
+    <div class="text-h5 text-weight-bold q-mb-md" style="color: #0D1B3E;">Mi Historial</div>
 
-    <!-- Alertas de inasistencia -->
-    <q-banner
-      v-for="alerta in alertasInasistencia"
-      :key="alerta.id"
-      class="bg-warning text-dark q-mb-sm rounded-borders"
-      dense
-    >
-      <template #avatar>
-        <q-icon name="warning" />
-      </template>
-      <strong>{{ alerta.ramo }}</strong> — {{ alerta.mensaje }}
-    </q-banner>
-
-    <div class="row q-col-gutter-md q-mt-sm">
-      <!-- Ramos en curso -->
-      <div class="col-12 col-md-7">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-subtitle1 text-weight-medium q-mb-sm">
-              <q-icon name="menu_book" color="primary" class="q-mr-xs" />
-              Ramos en Curso
-            </div>
-            <q-list separator>
-              <q-item v-for="ramo in ramosEnCurso" :key="ramo.id">
-                <q-item-section>
-                  <q-item-label>{{ ramo.nombre }}</q-item-label>
-                  <q-item-label caption>Profesor: {{ ramo.profesor }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-chip
-                    :color="ramo.asistencia >= 75 ? 'positive' : 'negative'"
-                    text-color="white"
-                    dense
-                    icon="event_available"
-                  >
-                    {{ ramo.asistencia }}% asist.
-                  </q-chip>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <!-- Ramos aprobados -->
-      <div class="col-12 col-md-5">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-subtitle1 text-weight-medium q-mb-sm">
-              <q-icon name="check_circle" color="positive" class="q-mr-xs" />
-              Ramos Aprobados
-            </div>
-            <q-list separator>
-              <q-item v-for="ramo in ramosAprobados" :key="ramo.id">
-                <q-item-section>
-                  <q-item-label>{{ ramo.nombre }}</q-item-label>
-                  <q-item-label caption>{{ ramo.periodo }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-badge color="positive">Aprobado</q-badge>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-card-section>
-        </q-card>
-      </div>
+    <div v-if="cargando" class="row justify-center q-mt-xl">
+      <q-spinner-dots color="primary" size="48px" />
     </div>
+
+    <template v-else>
+      <!-- En curso -->
+      <div class="q-mb-lg">
+        <div class="text-subtitle1 text-weight-medium q-mb-sm" style="color: #0D1B3E;">
+          <q-icon name="menu_book" class="q-mr-xs" style="color: #C9A96E;" />
+          En curso
+        </div>
+        <div v-if="enCurso.length === 0" class="text-body2 q-pa-md" style="color: #9E9E9E;">
+          No tienes cursos activos actualmente.
+        </div>
+        <q-card v-else flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
+          <q-list separator>
+            <q-item v-for="e in enCurso" :key="e.id">
+              <q-item-section>
+                <q-item-label style="color: #0D1B3E; font-weight: 500;">{{ e.course_name }}</q-item-label>
+                <q-item-label caption style="color: #8B7355;">{{ e.year }} · Período {{ e.period }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <div class="row items-center q-gutter-xs">
+                  <q-badge v-if="e.is_historical" style="background: #E0E0E0; color: #757575; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;">Histórico</q-badge>
+                  <q-badge style="background: #E3F2FD; color: #1565C0; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;">En curso</q-badge>
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card>
+      </div>
+
+      <!-- Aprobados -->
+      <div v-if="aprobados.length > 0" class="q-mb-lg">
+        <div class="text-subtitle1 text-weight-medium q-mb-sm" style="color: #0D1B3E;">
+          <q-icon name="check_circle" class="q-mr-xs" style="color: #2E7D32;" />
+          Aprobados
+        </div>
+        <q-card flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
+          <q-list separator>
+            <q-item v-for="e in aprobados" :key="e.id">
+              <q-item-section>
+                <q-item-label style="color: #0D1B3E; font-weight: 500;">{{ e.course_name }}</q-item-label>
+                <q-item-label caption style="color: #8B7355;">{{ e.year }} · Período {{ e.period }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <div class="row items-center q-gutter-xs">
+                  <q-badge v-if="e.is_historical" style="background: #E0E0E0; color: #757575; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;">Histórico</q-badge>
+                  <q-badge style="background: #E8F5E9; color: #1B5E20; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;">Aprobado</q-badge>
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card>
+      </div>
+
+      <!-- No completados -->
+      <div v-if="noCompletados.length > 0">
+        <div class="text-subtitle1 text-weight-medium q-mb-sm" style="color: #0D1B3E;">
+          <q-icon name="cancel" class="q-mr-xs" style="color: #C0392B;" />
+          No completados
+        </div>
+        <q-card flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
+          <q-list separator>
+            <q-item v-for="e in noCompletados" :key="e.id">
+              <q-item-section>
+                <q-item-label style="color: #0D1B3E; font-weight: 500;">{{ e.course_name }}</q-item-label>
+                <q-item-label caption style="color: #8B7355;">{{ e.year }} · Período {{ e.period }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <div class="row items-center q-gutter-xs">
+                  <q-badge v-if="e.is_historical" style="background: #E0E0E0; color: #757575; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;">Histórico</q-badge>
+                  <q-badge style="background: #FFEBEE; color: #7F0000; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;">No completado</q-badge>
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card>
+      </div>
+    </template>
   </q-page>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
+import api from '../../services/api'
+import { useAuthStore } from '../../stores/authStore'
 
-const alertasInasistencia = ref([
-  { id: 1, ramo: 'Teología Bíblica II', mensaje: 'Tu asistencia es de 68%, bajo el mínimo del 75%.' },
-])
+const $q = useQuasar()
+const auth = useAuthStore()
+const inscripciones = ref([])
+const cargando = ref(false)
 
-const ramosEnCurso = ref([
-  { id: 1, nombre: 'Teología Bíblica II', profesor: 'Carlos Muñoz', asistencia: 68 },
-  { id: 2, nombre: 'Homilética I', profesor: 'Pedro Soto', asistencia: 90 },
-  { id: 3, nombre: 'Griego Bíblico', profesor: 'Luis Vera', asistencia: 82 },
-])
+const enCurso       = computed(() => inscripciones.value.filter(e => e.status === 'in_progress'))
+const aprobados     = computed(() => inscripciones.value.filter(e => e.status === 'approved'))
+const noCompletados = computed(() => inscripciones.value.filter(e => e.status === 'failed'))
 
-const ramosAprobados = ref([
-  { id: 1, nombre: 'Introducción a la Teología', periodo: '2025-1' },
-  { id: 2, nombre: 'Hermenéutica', periodo: '2025-1' },
-  { id: 3, nombre: 'Historia de la Iglesia', periodo: '2025-2' },
-])
+onMounted(async () => {
+  cargando.value = true
+  try {
+    const { data } = await api.get(`/enrollments/student/${auth.user.id}`)
+    inscripciones.value = data
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudieron cargar tus inscripciones.', position: 'top' })
+  } finally {
+    cargando.value = false
+  }
+})
 </script>

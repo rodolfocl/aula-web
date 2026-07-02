@@ -56,21 +56,17 @@
             class="sidebar-item"
             :class="{ 'sidebar-item-active': isActive('AlumnoDashboard') }"
           >
-            <q-icon
-              name="dashboard"
-              size="22px"
-              :style="{ color: isActive('AlumnoDashboard') ? '#C9A96E' : '#FFFFFF' }"
+            <i
+              class="ti ti-history"
+              :style="`font-size: 22px; color: ${isActive('AlumnoDashboard') ? '#C9A96E' : '#FFFFFF'};`"
             />
             <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
-              Mi Dashboard
+              Mi Historial
             </q-tooltip>
           </q-item>
         </template>
 
-        <div
-          v-if="auth.hasRole('alumno') && (auth.hasRole('profesor') || auth.hasRole('administrador'))"
-          class="sidebar-sep"
-        />
+        <div class="sidebar-sep" />
 
         <template v-if="auth.hasRole('profesor')">
           <q-item
@@ -80,13 +76,12 @@
             class="sidebar-item"
             :class="{ 'sidebar-item-active': isActive('ProfesorDashboard') || isActive('PasarAsistencia') }"
           >
-            <q-icon
-              name="school"
-              size="22px"
-              :style="{ color: isActive('ProfesorDashboard') || isActive('PasarAsistencia') ? '#C9A96E' : '#FFFFFF' }"
+            <i
+              class="ti ti-chalkboard"
+              :style="`font-size: 22px; color: ${isActive('ProfesorDashboard') || isActive('PasarAsistencia') ? '#C9A96E' : '#FFFFFF'};`"
             />
             <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
-              Mis Cursos
+              Vista Profesor
             </q-tooltip>
           </q-item>
         </template>

@@ -1,128 +1,148 @@
 <template>
   <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
-    <div class="text-h5 text-weight-bold q-mb-lg" style="color: #0D1B3E;">Mis Cursos</div>
+    <div class="text-h5 text-weight-bold q-mb-lg" style="color: #0D1B3E;">Mis Clases</div>
 
-    <div class="row q-col-gutter-md">
-      <div
-        v-for="curso in cursos"
-        :key="curso.id"
-        class="col-12 col-sm-6 col-lg-4"
-      >
-        <q-card flat class="curso-card" style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
-          <!-- Cabecera del curso -->
-          <div class="q-pa-md" style="background: #0D1B3E;">
-            <div class="text-white text-subtitle1 text-weight-bold">{{ curso.nombre }}</div>
-            <div class="text-caption q-mt-xs" style="color: #C9A96E;">{{ curso.periodo }}</div>
+    <div v-if="cargando" class="row justify-center q-mt-xl">
+      <q-spinner-dots color="primary" size="48px" />
+    </div>
+
+    <div v-else-if="instancias.length === 0" class="column items-center q-mt-xl" style="color: #9E9E9E;">
+      <q-icon name="school" size="48px" style="opacity: 0.4;" />
+      <div class="q-mt-sm text-body1">No tienes cursos asignados actualmente.</div>
+    </div>
+
+    <div v-else class="row q-col-gutter-md">
+      <div v-for="inst in instancias" :key="inst.id" class="col-12 col-sm-6 col-lg-4">
+        <q-card flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
+          <!-- Cabecera -->
+          <div class="q-pa-md" :style="esActivo(inst) ? 'background: #0D1B3E;' : 'background: #616161;'">
+            <div class="row items-start justify-between no-wrap q-gutter-xs">
+              <div class="text-white text-subtitle1 text-weight-bold" style="flex: 1;">{{ inst.course_name }}</div>
+              <q-badge
+                v-if="!esActivo(inst)"
+                style="background: rgba(255,255,255,0.15); color: white; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; flex-shrink: 0;"
+              >
+                Finalizado
+              </q-badge>
+            </div>
+            <div class="text-caption q-mt-xs" style="color: #C9A96E;">{{ inst.year }} · Período {{ inst.period }}</div>
           </div>
 
-          <!-- Chips de info -->
+          <!-- Chip alumnos -->
           <q-card-section class="q-py-sm">
-            <div class="row q-gutter-sm items-center">
-              <q-chip
-                dense
-                icon="people"
-                style="background: rgba(13,27,62,0.08); color: #0D1B3E; font-size: 12px;"
-              >
-                {{ curso.totalAlumnos }} alumnos
-              </q-chip>
-              <q-chip
-                dense
-                icon="access_time"
-                style="background: rgba(201,169,110,0.2); color: #7A5C1E; font-size: 12px;"
-              >
-                {{ curso.proximaClase }}
-              </q-chip>
-            </div>
+            <q-chip dense icon="people" style="background: rgba(13,27,62,0.08); color: #0D1B3E; font-size: 12px;">
+              {{ inst.alumnos?.length ?? 0 }} alumnos
+            </q-chip>
           </q-card-section>
 
-          <q-separator style="border-color: #F0EAE0;" />
+          <q-separator style="border-color: rgba(0,0,0,0.06);" />
 
           <!-- Lista de alumnos -->
-          <q-list dense class="q-px-xs q-py-xs">
-            <q-item
-              v-for="alumno in curso.alumnos"
-              :key="alumno.id"
-              dense
-              class="q-py-sm rounded-borders"
-              style="min-height: 52px;"
-            >
+          <div v-if="inst.cargandoAlumnos" class="row justify-center q-pa-md">
+            <q-spinner-dots color="primary" size="28px" />
+          </div>
+          <q-list v-else-if="inst.alumnos?.length" dense class="q-px-xs q-py-xs">
+            <q-item v-for="alumno in inst.alumnos" :key="alumno.id" dense class="q-py-sm rounded-borders" style="min-height: 52px;">
               <q-item-section avatar style="min-width: 40px;">
-                <q-avatar
-                  size="36px"
-                  style="background: #1A2F6B; color: white; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;"
-                >
-                  {{ iniciales(alumno.nombre) }}
+                <q-avatar size="36px" style="background: #1A2F6B; color: white; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">
+                  {{ iniciales(alumno.full_name) }}
                 </q-avatar>
               </q-item-section>
-
               <q-item-section>
                 <q-item-label class="text-weight-medium" style="color: #0D1B3E; font-size: 14px;">
-                  {{ alumno.nombre }}
+                  {{ alumno.full_name }}
                 </q-item-label>
                 <q-item-label caption style="color: #8B7355;">
-                  {{ alumno.faltas === 0 ? 'Sin ausencias' : `${alumno.faltas} falta${alumno.faltas > 1 ? 's' : ''}` }}
+                  {{ alumno.absence_count === 0 ? 'Sin ausencias' : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}
                 </q-item-label>
               </q-item-section>
-
               <q-item-section side>
-                <q-badge
-                  :style="badgeStyle(alumno.faltas)"
-                  :label="badgeLabel(alumno.faltas)"
-                  class="badge-asistencia"
-                />
+                <q-badge :style="badgeStyle(alumno.absence_count)" :label="badgeLabel(alumno.absence_count)" />
               </q-item-section>
             </q-item>
           </q-list>
+          <div v-else class="text-caption q-pa-md" style="color: #9E9E9E;">Sin alumnos inscritos.</div>
 
-          <q-separator style="border-color: #F0EAE0;" />
-
-          <q-card-actions>
-            <q-btn
-              unelevated
-              icon="how_to_reg"
-              label="Pasar asistencia"
-              :to="{ name: 'PasarAsistencia', params: { id: curso.id } }"
-              style="background: #0D1B3E; color: white; border-radius: 8px;"
-              class="q-px-md full-width"
-            />
-          </q-card-actions>
+          <!-- Acciones solo en instancias activas -->
+          <template v-if="esActivo(inst)">
+            <q-separator style="border-color: rgba(0,0,0,0.06);" />
+            <q-card-actions class="column q-pa-sm q-gutter-xs">
+              <q-btn
+                unelevated
+                icon="how_to_reg"
+                label="Pasar asistencia"
+                :to="{ name: 'PasarAsistencia', params: { id: inst.id } }"
+                style="background: #0D1B3E; color: white; border-radius: 8px;"
+                class="q-px-md full-width"
+              />
+              <q-btn
+                flat
+                dense
+                label="Finalizar curso"
+                style="color: #C0392B; font-size: 12px; font-weight: 600;"
+                class="full-width"
+                @click="abrirFinalizar(inst)"
+              />
+            </q-card-actions>
+          </template>
         </q-card>
       </div>
     </div>
+
+    <!-- Modal finalizar curso -->
+    <q-dialog v-model="dialogoFinalizar">
+      <q-card class="pdv-dialog">
+        <div class="pdv-dialog-title" style="color: #C0392B;">Finalizar curso</div>
+        <div class="pdv-dialog-body">
+          <p style="margin: 0; font-size: 15px; color: #333333; line-height: 1.5;">
+            ¿Estás seguro que deseas finalizar
+            <strong>{{ instanciaAFinalizar?.course_name }}</strong> —
+            Período {{ instanciaAFinalizar?.period }} {{ instanciaAFinalizar?.year }}?
+          </p>
+          <q-input
+            v-model="motivoFinalizar"
+            label="Motivo o comentario de cierre"
+            type="textarea"
+            autogrow
+          />
+        </div>
+        <div class="pdv-dialog-actions">
+          <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
+          <q-btn
+            unelevated
+            label="Finalizar curso"
+            :loading="finalizando"
+            :disable="motivoFinalizar.trim().length < 10"
+            style="background: #C0392B; color: white; border-radius: 6px; padding: 0 24px; font-weight: 600;"
+            @click="confirmarFinalizar"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
+import api from '../../services/api'
+import { useAuthStore } from '../../stores/authStore'
 
-const cursos = ref([
-  {
-    id: 1,
-    nombre: 'Teología Bíblica II',
-    periodo: '2026-1',
-    totalAlumnos: 3,
-    proximaClase: 'Jueves 10:00',
-    alumnos: [
-      { id: 1, nombre: 'María González', faltas: 3 },
-      { id: 2, nombre: 'Juan Pérez', faltas: 0 },
-      { id: 3, nombre: 'Laura Díaz', faltas: 2 },
-    ],
-  },
-  {
-    id: 2,
-    nombre: 'Hermenéutica Avanzada',
-    periodo: '2026-1',
-    totalAlumnos: 2,
-    proximaClase: 'Viernes 14:00',
-    alumnos: [
-      { id: 4, nombre: 'Rodrigo Soto', faltas: 1 },
-      { id: 5, nombre: 'Carmen Rojas', faltas: 0 },
-    ],
-  },
-])
+const $q = useQuasar()
+const auth = useAuthStore()
+const instancias = ref([])
+const cargando = ref(false)
+const dialogoFinalizar = ref(false)
+const instanciaAFinalizar = ref(null)
+const motivoFinalizar = ref('')
+const finalizando = ref(false)
+
+function esActivo(inst) {
+  return inst.status === 'active'
+}
 
 function iniciales(nombre) {
-  return nombre.split(' ').map(n => n[0]).slice(0, 2).join('')
+  return (nombre ?? '?').split(' ').map(n => n[0]).slice(0, 2).join('')
 }
 
 function badgeLabel(faltas) {
@@ -132,12 +152,58 @@ function badgeLabel(faltas) {
 }
 
 function badgeStyle(faltas) {
-  if (faltas === 0) {
-    return 'background: #E8F5E9; color: #1B5E20; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
-  }
-  if (faltas <= 2) {
-    return 'background: #FFF8E1; color: #7A5C00; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
-  }
+  if (faltas === 0) return 'background: #E8F5E9; color: #1B5E20; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
+  if (faltas <= 2)  return 'background: #FFF8E1; color: #7A5C00; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
   return 'background: #FFEBEE; color: #7F0000; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
 }
+
+function abrirFinalizar(inst) {
+  instanciaAFinalizar.value = inst
+  motivoFinalizar.value = ''
+  dialogoFinalizar.value = true
+}
+
+async function confirmarFinalizar() {
+  finalizando.value = true
+  try {
+    await api.patch(`/course-instances/${instanciaAFinalizar.value.id}`, {
+      status: 'finished',
+      close_reason: motivoFinalizar.value.trim(),
+    })
+    instanciaAFinalizar.value.status = 'finished'
+    dialogoFinalizar.value = false
+    $q.notify({ type: 'positive', message: 'Curso finalizado correctamente.', position: 'top' })
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo finalizar el curso.', position: 'top' })
+  } finally {
+    finalizando.value = false
+  }
+}
+
+async function cargarAlumnos(inst) {
+  inst.cargandoAlumnos = true
+  try {
+    const { data } = await api.get(`/enrollments/instance/${inst.id}`)
+    inst.alumnos = data
+  } catch {
+    inst.alumnos = []
+  } finally {
+    inst.cargandoAlumnos = false
+  }
+}
+
+onMounted(async () => {
+  cargando.value = true
+  try {
+    const { data } = await api.get('/course-instances', {
+      params: { teacher_id: auth.user.id },
+    })
+    instancias.value = data.map(i => ({ ...i, alumnos: null, cargandoAlumnos: false }))
+    await Promise.all(instancias.value.map(cargarAlumnos))
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudieron cargar los cursos.', position: 'top' })
+  } finally {
+    cargando.value = false
+  }
+})
 </script>

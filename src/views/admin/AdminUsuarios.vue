@@ -2,13 +2,18 @@
   <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
     <div class="row items-center justify-between q-mb-md">
       <div class="text-h5 text-weight-bold" style="color: #0D1B3E;">Gestión de Usuarios</div>
-      <q-btn
-        unelevated
-        icon="add"
-        label="Nuevo usuario"
-        style="background: #0D1B3E; color: white; border-radius: 8px;"
-        @click="abrirDialogo()"
-      />
+      <div style="position: relative; display: inline-flex;">
+        <q-btn
+          unelevated
+          icon="add"
+          label="Nuevo usuario"
+          :style="isAdmin ? 'background: #0D1B3E; color: white; border-radius: 8px;' : 'background: #0D1B3E; color: white; border-radius: 8px; opacity: 0.4; pointer-events: none;'"
+          @click="abrirDialogo()"
+        />
+        <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+          <q-tooltip class="pdv-tooltip">Solo los administradores pueden crear</q-tooltip>
+        </div>
+      </div>
     </div>
 
     <q-card flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
@@ -55,12 +60,26 @@
 
         <template #body-cell-acciones="props">
           <q-td :props="props" class="q-gutter-xs">
-            <q-btn flat round dense icon="edit" color="primary" size="sm" @click="abrirDialogo(props.row)" />
-            <q-btn
-              flat round dense icon="delete" size="sm"
-              style="color: #C0392B;"
-              @click="eliminar(props.row)"
-            />
+            <div style="position: relative; display: inline-flex;">
+              <q-btn
+                flat round dense icon="edit" size="sm"
+                :style="isAdmin ? 'color: #1565C0;' : 'color: #1565C0; opacity: 0.4; pointer-events: none;'"
+                @click="abrirDialogo(props.row)"
+              />
+              <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+                <q-tooltip class="pdv-tooltip">Solo los administradores pueden editar</q-tooltip>
+              </div>
+            </div>
+            <div style="position: relative; display: inline-flex;">
+              <q-btn
+                flat round dense icon="delete" size="sm"
+                :style="isAdmin ? 'color: #C0392B;' : 'color: #C0392B; opacity: 0.4; pointer-events: none;'"
+                @click="eliminar(props.row)"
+              />
+              <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+                <q-tooltip class="pdv-tooltip">Solo los administradores pueden eliminar</q-tooltip>
+              </div>
+            </div>
           </q-td>
         </template>
 
@@ -134,9 +153,11 @@ import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+import { usePermissions } from '../../composables/usePermissions'
 
 const $q = useQuasar()
 const auth = useAuthStore()
+const { isAdmin } = usePermissions()
 
 const filtro = ref('')
 const dialogo = ref(false)
