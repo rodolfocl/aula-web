@@ -37,16 +37,17 @@
     </div>
 
     <!-- Grilla de cursos -->
-    <div v-else class="row q-col-gutter-md">
-      <div v-for="curso in cursos" :key="curso.id" class="col-12 col-sm-6 col-lg-4">
+    <div v-else class="row q-col-gutter-md items-stretch">
+      <div v-for="curso in cursos" :key="curso.id" class="col-12 col-sm-6 col-lg-4" style="display: flex;">
         <q-card
           flat
+          class="course-card"
           :style="curso.active === false
             ? 'background: #F5F5F5; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;'
             : 'background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;'"
         >
-          <q-card-section>
-            <div class="row items-start justify-between no-wrap">
+          <q-card-section style="height: 100%;">
+            <div class="row items-start justify-between no-wrap" style="height: 100%;">
               <div style="flex: 1; min-width: 0;">
                 <div class="row items-center q-gutter-xs q-mb-xs">
                   <span
@@ -62,7 +63,7 @@
                 </div>
                 <div
                   v-if="curso.description"
-                  class="text-body2"
+                  class="text-body2 course-description"
                   :style="curso.active === false ? 'color: #BDBDBD; line-height: 1.5;' : 'color: #555555; line-height: 1.5;'"
                 >
                   {{ curso.description }}
@@ -224,6 +225,20 @@ async function confirmarDesactivar() {
 </script>
 
 <style scoped>
+.course-card {
+  width: 100%;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+}
+
+.course-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .curso-btn {
   background: none;
   border: none;
