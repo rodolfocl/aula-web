@@ -37,7 +37,7 @@
             :type="mostrarPassword ? 'text' : 'password'"
             :rules="[
               val => !!val || 'La contraseña es requerida',
-              val => val.length >= 8 || 'Mínimo 8 caracteres',
+              val => val.length >= 3 || 'Mínimo 3 caracteres',
             ]"
             autocomplete="new-password"
           >

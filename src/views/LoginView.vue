@@ -7,6 +7,12 @@
         <div class="text-caption text-grey-6">Ministerio Pan de Vida</div>
       </q-card-section>
 
+      <q-card-section v-if="mensajeExito" class="q-pt-none q-pb-none">
+        <q-banner class="bg-positive text-white rounded-borders" dense>
+          {{ mensajeExito }}
+        </q-banner>
+      </q-card-section>
+
       <q-card-section>
         <q-form ref="formRef" @submit.prevent="iniciarSesion" class="q-gutter-lg">
           <q-input
@@ -68,13 +74,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import authService from '../services/auth'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
+
+const mensajeExito = computed(() =>
+  route.query.mensaje === 'password-actualizada'
+    ? 'Contraseña actualizada correctamente. Ingresa con tu nueva contraseña.'
+    : null
+)
 
 const formRef = ref(null)
 const form = ref({ email: '', password: '' })
