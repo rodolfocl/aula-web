@@ -87,11 +87,11 @@
         </template>
 
         <div
-          v-if="auth.hasRole('administrador') && (auth.hasRole('alumno') || auth.hasRole('profesor'))"
+          v-if="(auth.hasRole('administrador') || auth.hasRole('profesor')) && auth.hasRole('alumno')"
           class="sidebar-sep"
         />
 
-        <template v-if="auth.hasRole('administrador')">
+        <template v-if="auth.hasRole('administrador') || auth.hasRole('profesor')">
           <q-item
             clickable
             v-ripple

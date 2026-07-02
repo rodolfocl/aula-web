@@ -58,19 +58,19 @@ const routes = [
         path: 'admin/usuarios',
         name: 'AdminUsuarios',
         component: () => import('../views/admin/AdminUsuarios.vue'),
-        meta: { rol: 'administrador' },
+        meta: { roles: ['administrador', 'profesor'] },
       },
       {
         path: 'admin/cursos',
         name: 'AdminCursos',
         component: () => import('../views/admin/AdminCursos.vue'),
-        meta: { rol: 'administrador' },
+        meta: { roles: ['administrador', 'profesor'] },
       },
       {
         path: 'admin/instancias',
         name: 'AdminInstancias',
         component: () => import('../views/admin/AdminInstancias.vue'),
-        meta: { rol: 'administrador' },
+        meta: { roles: ['administrador', 'profesor'] },
       },
     ],
   },
@@ -92,9 +92,8 @@ router.beforeEach((to) => {
 
   if (!auth.isAuthenticated) return { name: 'Login' }
 
-  if (to.meta.rol && !auth.hasRole(to.meta.rol)) {
-    return { name: 'Login' }
-  }
+  if (to.meta.rol && !auth.hasRole(to.meta.rol)) return { name: 'Login' }
+  if (to.meta.roles && !to.meta.roles.some(r => auth.hasRole(r))) return { name: 'Login' }
 
   return true
 })

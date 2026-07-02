@@ -5,7 +5,7 @@
       <div style="position: relative; display: inline-flex;">
         <q-btn
           unelevated icon="add" label="Nueva instancia"
-          :style="isAdmin ? 'background: #0D1B3E; color: white; border-radius: 8px;' : 'background: #0D1B3E; color: white; border-radius: 8px; opacity: 0.4; pointer-events: none;'"
+          :style="isAdmin ? 'background: #0D1B3E; color: white; border-radius: 8px;' : 'background: #CCCCCC; color: #888888; border-radius: 8px; opacity: 0.5; pointer-events: none;'"
           @click="abrirDialogo()"
         />
         <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
@@ -40,7 +40,7 @@
             <div style="position: relative; display: inline-flex;">
               <q-btn
                 flat round dense icon="edit" size="sm"
-                :style="isAdmin ? 'color: #0D1B3E;' : 'color: #0D1B3E; opacity: 0.4; pointer-events: none;'"
+                :style="isAdmin ? 'color: #0D1B3E;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
                 @click="abrirDialogo(props.row)"
               />
               <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
@@ -50,7 +50,7 @@
             <div v-if="props.row.status === 'active'" style="position: relative; display: inline-flex;">
               <q-btn
                 flat round dense icon="block" size="sm"
-                :style="isAdmin ? 'color: #C0392B;' : 'color: #C0392B; opacity: 0.4; pointer-events: none;'"
+                :style="isAdmin ? 'color: #C0392B;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
                 @click="abrirCierre(props.row)"
               />
               <div style="position: absolute; inset: 0; cursor: not-allowed;">
@@ -60,7 +60,7 @@
             <div v-if="props.row.status === 'finished'" style="position: relative; display: inline-flex;">
               <q-btn
                 flat round dense icon="play_circle_outline" size="sm"
-                :style="isAdmin ? 'color: #2E7D32;' : 'color: #2E7D32; opacity: 0.4; pointer-events: none;'"
+                :style="isAdmin ? 'color: #2E7D32;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
                 @click="abrirReapertura(props.row)"
               />
               <div style="position: absolute; inset: 0; cursor: not-allowed;">

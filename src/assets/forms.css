@@ -38,3 +38,10 @@
 .pdv-btn-cancel {
   color: #555555 !important;
 }
+
+.btn-disabled {
+  color: #AAAAAA !important;
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}

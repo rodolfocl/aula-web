@@ -7,7 +7,7 @@
           unelevated
           icon="add"
           label="Nuevo usuario"
-          :style="isAdmin ? 'background: #0D1B3E; color: white; border-radius: 8px;' : 'background: #0D1B3E; color: white; border-radius: 8px; opacity: 0.4; pointer-events: none;'"
+          :style="isAdmin ? 'background: #0D1B3E; color: white; border-radius: 8px;' : 'background: #CCCCCC; color: #888888; border-radius: 8px; opacity: 0.5; pointer-events: none;'"
           @click="abrirDialogo()"
         />
         <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
@@ -63,7 +63,7 @@
             <div style="position: relative; display: inline-flex;">
               <q-btn
                 flat round dense icon="edit" size="sm"
-                :style="isAdmin ? 'color: #1565C0;' : 'color: #1565C0; opacity: 0.4; pointer-events: none;'"
+                :style="isAdmin ? 'color: #1565C0;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
                 @click="abrirDialogo(props.row)"
               />
               <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
@@ -73,7 +73,7 @@
             <div style="position: relative; display: inline-flex;">
               <q-btn
                 flat round dense icon="delete" size="sm"
-                :style="isAdmin ? 'color: #C0392B;' : 'color: #C0392B; opacity: 0.4; pointer-events: none;'"
+                :style="isAdmin ? 'color: #C0392B;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
                 @click="eliminar(props.row)"
               />
               <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">

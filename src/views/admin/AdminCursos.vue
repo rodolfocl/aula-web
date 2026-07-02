@@ -11,7 +11,7 @@
         <div style="position: relative; display: inline-flex;">
           <q-btn
             unelevated icon="add" label="Nuevo curso"
-            :style="isAdmin ? 'background: #0D1B3E; color: white; border-radius: 8px;' : 'background: #0D1B3E; color: white; border-radius: 8px; opacity: 0.4; pointer-events: none;'"
+            :style="isAdmin ? 'background: #0D1B3E; color: white; border-radius: 8px;' : 'background: #CCCCCC; color: #888888; border-radius: 8px; opacity: 0.5; pointer-events: none;'"
             @click="abrirDialogo()"
           />
           <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
@@ -72,7 +72,7 @@
                 <div style="position: relative; display: inline-flex;">
                   <button
                     class="curso-btn curso-btn-edit"
-                    :style="!isAdmin ? 'opacity: 0.4; pointer-events: none;' : ''"
+                    :class="{ 'btn-disabled': !isAdmin }"
                     @click="abrirDialogo(curso)"
                   >
                     <i class="ti ti-pencil" style="font-size: 18px;" />
@@ -84,7 +84,7 @@
                 <div v-if="curso.active !== false" style="position: relative; display: inline-flex;">
                   <button
                     class="curso-btn curso-btn-deactivate"
-                    :style="!isAdmin ? 'opacity: 0.4; pointer-events: none;' : ''"
+                    :class="{ 'btn-disabled': !isAdmin }"
                     @click="abrirDesactivar(curso)"
                   >
                     <i class="ti ti-eye-off" style="font-size: 18px;" />
