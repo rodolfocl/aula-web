@@ -41,26 +41,22 @@
           <div v-if="inst.cargandoAlumnos" class="row justify-center q-pa-md">
             <q-spinner-dots color="primary" size="28px" />
           </div>
-          <q-list v-else-if="inst.alumnos?.length" dense class="q-px-xs q-py-xs">
-            <q-item v-for="alumno in inst.alumnos" :key="alumno.id" dense class="q-py-sm rounded-borders" style="min-height: 52px;">
-              <q-item-section avatar style="min-width: 40px;">
-                <q-avatar size="36px" style="background: #1A2F6B; color: white; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">
-                  {{ iniciales(alumno.full_name) }}
-                </q-avatar>
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-weight-medium" style="color: #0D1B3E; font-size: 14px;">
-                  {{ alumno.full_name }}
-                </q-item-label>
-                <q-item-label caption style="color: #8B7355;">
-                  {{ alumno.absence_count === 0 ? 'Sin ausencias' : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}
-                </q-item-label>
-              </q-item-section>
-              <q-item-section side>
-                <q-badge :style="badgeStyle(alumno.absence_count)" :label="badgeLabel(alumno.absence_count)" />
-              </q-item-section>
-            </q-item>
-          </q-list>
+          <div v-else-if="inst.alumnos?.length" style="padding: 0 8px;">
+            <div
+              v-for="alumno in inst.alumnos"
+              :key="alumno.id"
+              style="display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 0.5px solid #EEEEEE;"
+            >
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: #1A2F6B; color: white; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                {{ iniciales(alumno.full_name) }}
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 14px; color: #0D1B3E; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ alumno.full_name }}</div>
+                <div style="font-size: 12px; color: #888888;">{{ alumno.absence_count === 0 ? 'Sin ausencias' : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}</div>
+              </div>
+              <span :style="badgeStyle(alumno.absence_count)">{{ badgeLabel(alumno.absence_count) }}</span>
+            </div>
+          </div>
           <div v-else class="text-caption q-pa-md" style="color: #9E9E9E;">Sin alumnos inscritos.</div>
 
           <!-- Acciones solo en instancias activas -->

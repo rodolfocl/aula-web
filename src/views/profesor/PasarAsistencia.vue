@@ -28,8 +28,8 @@
         <q-card flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
           <q-list separator>
             <q-item v-for="alumno in alumnos" :key="alumno.id" style="padding: 14px 16px;">
-              <q-item-section avatar style="min-width: 44px;">
-                <q-avatar size="40px" style="background: #1A2F6B; color: white; font-size: 14px; font-weight: 700;">
+              <q-item-section avatar style="min-width: 80px;">
+                <q-avatar size="72px" style="background: #1A2F6B; color: white; font-size: 26px; font-weight: 700;">
                   {{ iniciales(alumno.full_name) }}
                 </q-avatar>
               </q-item-section>
