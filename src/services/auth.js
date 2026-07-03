@@ -17,6 +17,7 @@ export default {
       nombre: userData.full_name,
       email: userData.email,
       roles: userData.roles ?? ['alumno'],
+      avatar: userData.avatar ?? null,
     }
     return { token, user }
   },
