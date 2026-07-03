@@ -2,21 +2,21 @@
   <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
 
     <!-- Cabecera -->
-    <div class="row items-center justify-between q-mb-lg">
-      <div class="row items-center">
+    <div class="row items-center justify-between q-mb-lg" style="gap: 8px;">
+      <div class="row items-center" style="flex: 1; min-width: 0;">
         <q-btn flat round dense icon="arrow_back" :to="{ name: 'ProfesorSesion' }" style="color: #0D1B3E;" class="q-mr-sm" />
-        <div>
+        <div style="min-width: 0;">
           <div class="text-h6 text-weight-bold" style="color: #0D1B3E;">Pasar Asistencia</div>
-          <div class="text-caption q-mt-xs" style="color: #8B7355;">
+          <div class="text-caption q-mt-xs" style="color: #94A3B8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
             {{ instancia?.course_name }} · {{ instancia?.year }} Período {{ instancia?.period }}
           </div>
         </div>
       </div>
       <q-btn
-        unelevated icon="save" label="Guardar asistencia"
+        unelevated icon="save" :label="$q.screen.gt.xs ? 'Guardar asistencia' : ''"
         :loading="guardando" :disable="!pendiente"
-        style="background: #0D1B3E; color: white; border-radius: 8px;"
-        class="q-px-lg"
+        style="background: #0D1B3E; color: white; border-radius: 8px; flex-shrink: 0;"
+        class="q-px-md"
         @click="guardar"
       />
     </div>
@@ -135,8 +135,8 @@
     </template>
 
     <!-- Dialog: nueva sesión -->
-    <q-dialog v-model="dialogoSesion">
-      <q-card class="pdv-dialog">
+    <q-dialog v-model="dialogoSesion" :maximized="$q.screen.lt.sm">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : ''">
         <div class="pdv-dialog-title">Nueva sesión</div>
         <div class="pdv-dialog-body">
           <q-input v-model="formSesion.fecha" label="Fecha *" type="date" outlined dense autofocus />
@@ -476,11 +476,51 @@ tbody .th-sticky { background: white; }
   text-align: center;
 }
 .fecha-edit-input:focus {
-  border-color: #C9A96E;
+  border-color: rgba(255, 255, 255, 0.8);
   background: rgba(255, 255, 255, 0.25);
 }
 .fecha-edit-input::-webkit-calendar-picker-indicator {
   filter: invert(1);
+}
+
+/* ── Mobile: tabla con scroll horizontal, celdas compactas ── */
+@media (max-width: 599px) {
+  .asistencia-table {
+    font-size: 11px;
+  }
+
+  .asistencia-table thead th {
+    padding: 8px 10px;
+    font-size: 10px;
+  }
+
+  .th-nombre  { min-width: 150px; }
+  .th-sesion  { min-width: 70px; }
+  .th-faltas  { min-width: 54px; }
+
+  .td-nombre {
+    padding: 8px 10px;
+  }
+
+  .avatar-mini {
+    width: 24px;
+    height: 24px;
+    font-size: 9px;
+  }
+
+  .td-asistencia {
+    padding: 4px 6px;
+  }
+
+  .estado-badge {
+    width: 26px;
+    height: 26px;
+  }
+
+  .td-faltas {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
 }
 </style>
 

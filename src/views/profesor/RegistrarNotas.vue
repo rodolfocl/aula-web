@@ -2,21 +2,21 @@
   <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
 
     <!-- Cabecera -->
-    <div class="row items-center justify-between q-mb-lg">
-      <div class="row items-center">
+    <div class="row items-center justify-between q-mb-lg" style="gap: 8px;">
+      <div class="row items-center" style="flex: 1; min-width: 0;">
         <q-btn flat round dense icon="arrow_back" :to="{ name: 'ProfesorSesion' }" style="color: #0D1B3E;" class="q-mr-sm" />
-        <div>
+        <div style="min-width: 0;">
           <div class="text-h6 text-weight-bold" style="color: #0D1B3E;">Registrar Notas</div>
-          <div class="text-caption q-mt-xs" style="color: #8B7355;">
+          <div class="text-caption q-mt-xs" style="color: #94A3B8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
             {{ instancia?.course_name }} · {{ instancia?.year }} Período {{ instancia?.period }}
           </div>
         </div>
       </div>
       <q-btn
-        unelevated icon="save" label="Guardar notas"
+        unelevated icon="save" :label="$q.screen.gt.xs ? 'Guardar notas' : ''"
         :loading="guardando" :disable="!hayNotas"
-        style="background: #0D1B3E; color: white; border-radius: 8px;"
-        class="q-px-lg"
+        style="background: #0D1B3E; color: white; border-radius: 8px; flex-shrink: 0;"
+        class="q-px-md"
         @click="guardar"
       />
     </div>
@@ -114,8 +114,8 @@
     </template>
 
     <!-- Dialog: nueva evaluación -->
-    <q-dialog v-model="dialogoForm">
-      <q-card class="pdv-dialog">
+    <q-dialog v-model="dialogoForm" :maximized="$q.screen.lt.sm">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : ''">
         <div class="pdv-dialog-title">Nueva evaluación</div>
         <div class="pdv-dialog-body">
           <q-input v-model="form.name" label="Nombre *" placeholder="Ej: Examen 1, Trabajo grupal…" outlined dense autofocus />
@@ -508,4 +508,44 @@ tbody .th-sticky { background: white; }
 
 /* ── Celda promedio ───────── */
 .td-promedio { text-align: center; padding: 10px 16px; }
+
+/* ── Mobile: tabla con scroll horizontal, celdas compactas ── */
+@media (max-width: 599px) {
+  .notas-table {
+    font-size: 11px;
+  }
+
+  .notas-table thead th {
+    padding: 8px 8px;
+    font-size: 10px;
+  }
+
+  .th-nombre   { min-width: 150px; }
+  .th-eval     { min-width: 80px; }
+  .th-promedio { min-width: 70px; }
+
+  .td-nombre {
+    padding: 8px 10px;
+  }
+
+  .avatar-mini {
+    width: 24px;
+    height: 24px;
+    font-size: 9px;
+  }
+
+  .td-nota {
+    padding: 5px 6px;
+  }
+
+  .nota-input {
+    width: 52px;
+    font-size: 13px;
+    padding: 4px 3px;
+  }
+
+  .td-promedio {
+    padding: 8px 10px;
+  }
+}
 </style>

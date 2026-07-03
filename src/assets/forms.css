@@ -1,22 +1,45 @@
+/* ═══════════════════════════════════════════════════
+   PDV Aula — Design System
+═══════════════════════════════════════════════════ */
+:root {
+  --pdv-radius-sm:   6px;
+  --pdv-radius-md:   10px;
+  --pdv-radius-lg:   14px;
+  --pdv-radius-pill: 999px;
+
+  --pdv-shadow-card:   0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  --pdv-shadow-topbar: 0 1px 0 rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+  --pdv-shadow-dialog: 0 8px 32px rgba(0,0,0,0.14);
+
+  /* Paleta de estado — pastel */
+  --pdv-green-bg:  #ECFDF5; --pdv-green-txt:  #065F46;
+  --pdv-red-bg:    #FEF2F2; --pdv-red-txt:    #991B1B;
+  --pdv-orange-bg: #FFF7ED; --pdv-orange-txt: #9A3412;
+  --pdv-blue-bg:   #EFF6FF; --pdv-blue-txt:   #1E40AF;
+  --pdv-gray-bg:   #F1F5F9; --pdv-gray-txt:   #475569;
+  --pdv-navy-bg:   rgba(13,27,62,0.08); --pdv-navy-txt: #0D1B3E;
+}
+
+/* ── Diálogos ────────────────────────────────── */
 .pdv-dialog {
   min-width: 380px;
   background: white;
-  border-radius: 8px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--pdv-shadow-dialog) !important;
 }
 
 .pdv-dialog-title {
-  font-size: 22px;
-  font-weight: 500;
+  font-size: 19px;
+  font-weight: 600;
   color: #111111;
-  padding: 28px 28px 0;
+  padding: 24px 24px 0;
 }
 
 .pdv-dialog-body {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 20px 28px 8px;
+  gap: 20px;
+  padding: 16px 24px 8px;
 }
 
 .pdv-dialog-actions {
@@ -24,24 +47,132 @@
   justify-content: flex-end;
   align-items: center;
   gap: 8px;
-  padding: 8px 20px 24px;
+  padding: 8px 16px 20px;
 }
 
 .pdv-btn-save {
   background: #0D1B3E !important;
   color: white !important;
-  border-radius: 6px !important;
+  border-radius: 8px !important;
   padding: 0 24px !important;
   font-weight: 600 !important;
+  min-height: 36px !important;
 }
 
 .pdv-btn-cancel {
-  color: #555555 !important;
+  color: #64748B !important;
+  font-weight: 500 !important;
 }
 
 .btn-disabled {
-  color: #AAAAAA !important;
-  opacity: 0.5;
+  color: #CBD5E1 !important;
+  opacity: 0.6;
   pointer-events: none;
   cursor: not-allowed;
+}
+
+/* ── Pill badges de estado ───────────────────── */
+.pdv-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--pdv-radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.pdv-pill-success { background: var(--pdv-green-bg);  color: var(--pdv-green-txt); }
+.pdv-pill-error   { background: var(--pdv-red-bg);    color: var(--pdv-red-txt); }
+.pdv-pill-warning { background: var(--pdv-orange-bg); color: var(--pdv-orange-txt); }
+.pdv-pill-info    { background: var(--pdv-blue-bg);   color: var(--pdv-blue-txt); }
+.pdv-pill-neutral { background: var(--pdv-gray-bg);   color: var(--pdv-gray-txt); }
+.pdv-pill-navy    { background: var(--pdv-navy-bg);   color: var(--pdv-navy-txt); }
+
+/* ── Botones de acción icónico (tablas) ─────── */
+.pdv-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: #F1F5F9;
+  color: #64748B;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.pdv-action-btn:hover                   { background: #E2E8F0; color: #0D1B3E; }
+.pdv-action-btn.pdv-action-danger:hover  { background: #FEE2E2; color: #991B1B; }
+.pdv-action-btn.pdv-action-success:hover { background: #DCFCE7; color: #15803D; }
+.pdv-action-btn.pdv-action-blue:hover    { background: #DBEAFE; color: #1D4ED8; }
+.pdv-action-btn.pdv-action-disabled {
+  color: #CBD5E1 !important;
+  background: #F8FAFC !important;
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+}
+
+/* ── Avatares de usuario ────────────────────── */
+.pdv-avatar {
+  border-radius: 50%;
+  background: #CBD5E1;
+  color: #334155;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
+.pdv-avatar-sm { width: 32px; height: 32px; font-size: 11px; }
+.pdv-avatar-md { width: 36px; height: 36px; font-size: 13px; }
+.pdv-avatar-lg { width: 40px; height: 40px; font-size: 14px; }
+
+/* ── QTable — clase .pdv-table en el q-card padre ── */
+.pdv-table { overflow: hidden; }
+
+.pdv-table .q-table__top {
+  padding: 12px 16px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.pdv-table .q-table thead th {
+  background: #F8FAFC;
+  color: #64748B;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid #E2E8F0;
+  padding: 11px 16px;
+}
+
+.pdv-table .q-table tbody td {
+  padding: 11px 16px;
+  border-bottom: 1px solid #F1F5F9;
+  font-size: 13.5px;
+  color: #1E293B;
+}
+
+.pdv-table .q-table tbody tr:last-child td { border-bottom: none; }
+.pdv-table .q-table tbody tr:hover td     { background: #F8FAFC; }
+
+/* Eliminar zebra striping de Quasar */
+.pdv-table .q-table tbody tr:nth-child(even)       { background: transparent; }
+.pdv-table .q-table tbody tr:nth-child(even):hover td { background: #F8FAFC; }
+
+/* ── Tooltip global ─────────────────────────── */
+.pdv-tooltip {
+  background: #0B1835 !important;
+  color: white !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  padding: 5px 10px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35) !important;
 }

@@ -1,13 +1,13 @@
 <template>
   <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
     <div class="row items-center justify-between q-mb-md">
-      <div class="text-h5 text-weight-bold" style="color: #0D1B3E;">Gestión de Usuarios</div>
+      <div style="color: #0D1B3E; font-size: 20px; font-weight: 700;">Gestión de Usuarios</div>
       <div style="position: relative; display: inline-flex;">
         <q-btn
-          unelevated
-          icon="add"
-          label="Nuevo usuario"
-          :style="isAdmin ? 'background: #0D1B3E; color: white; border-radius: 8px;' : 'background: #CCCCCC; color: #888888; border-radius: 8px; opacity: 0.5; pointer-events: none;'"
+          unelevated icon="add" label="Nuevo usuario"
+          :style="isAdmin
+            ? 'background: #0D1B3E; color: white; border-radius: 8px;'
+            : 'background: #E2E8F0; color: #94A3B8; border-radius: 8px; pointer-events: none;'"
           @click="abrirDialogo()"
         />
         <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
@@ -16,7 +16,7 @@
       </div>
     </div>
 
-    <q-card flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
+    <q-card class="pdv-table" style="background: white; border-radius: 14px; box-shadow: var(--pdv-shadow-card);">
       <q-table
         :rows="usuarios"
         :columns="columnas"
@@ -26,110 +26,188 @@
         :loading="cargando"
         :pagination="{ rowsPerPage: 15 }"
         :rows-per-page-options="[5, 10, 15, 25, 50, 0]"
+        :grid="$q.screen.lt.sm"
       >
         <template #top-left>
           <q-toggle
             v-model="mostrarInactivos"
             label="Mostrar inactivos"
             color="primary"
-            style="font-size: 13px; color: #555555;"
+            style="font-size: 13px; color: #64748B;"
           />
         </template>
 
         <template #top-right>
-          <q-input v-model="filtro" outlined dense placeholder="Buscar..." clearable>
-            <template #prepend><q-icon name="search" /></template>
+          <q-input
+            v-model="filtro" outlined dense placeholder="Buscar..." clearable
+            style="min-width: 200px;"
+          >
+            <template #prepend><q-icon name="search" color="grey-5" /></template>
           </q-input>
         </template>
 
+        <!-- ── Columna nombre con avatar ── -->
         <template #body-cell-full_name="props">
           <q-td :props="props">
-            <span :style="props.row.active === false ? 'color: #AAAAAA;' : 'color: #0D1B3E;'">
-              {{ props.row.full_name }}
+            <div class="row items-center no-wrap" style="gap: 10px;">
+              <div class="pdv-avatar pdv-avatar-sm">{{ iniciales(props.row.full_name) }}</div>
+              <span :style="props.row.active === false ? 'color: #94A3B8;' : 'color: #0D1B3E; font-weight: 500;'">
+                {{ props.row.full_name }}
+              </span>
+            </div>
+          </q-td>
+        </template>
+
+        <!-- ── Columna roles ── -->
+        <template #body-cell-roles="props">
+          <q-td :props="props">
+            <div class="row q-gutter-xs">
+              <span
+                v-for="rol in (props.value || [])"
+                :key="rol"
+                class="pdv-pill pdv-pill-navy"
+                style="text-transform: capitalize;"
+              >{{ rol }}</span>
+            </div>
+          </q-td>
+        </template>
+
+        <!-- ── Columna estado ── -->
+        <template #body-cell-active="props">
+          <q-td :props="props" style="text-align: center;">
+            <span :class="['pdv-pill', props.value ? 'pdv-pill-success' : 'pdv-pill-error']">
+              {{ props.value ? 'Activo' : 'Inactivo' }}
             </span>
           </q-td>
         </template>
 
-        <template #body-cell-roles="props">
-          <q-td :props="props">
-            <div class="row q-gutter-xs">
-              <q-badge
-                v-for="rol in (props.value || [])"
-                :key="rol"
-                style="background: rgba(13,27,62,0.10); color: #0D1B3E; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: capitalize;"
-              >
-                {{ rol }}
-              </q-badge>
-            </div>
-          </q-td>
-        </template>
-
-        <template #body-cell-active="props">
-          <q-td :props="props">
-            <q-badge
-              :style="props.value
-                ? 'background: #E8F5E9; color: #1B5E20; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
-                : 'background: #FFEBEE; color: #7F0000; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'"
-            >
-              {{ props.value ? 'Activo' : 'Inactivo' }}
-            </q-badge>
-          </q-td>
-        </template>
-
+        <!-- ── Columna acciones ── -->
         <template #body-cell-acciones="props">
-          <q-td :props="props" class="q-gutter-xs">
-            <!-- Editar -->
-            <div style="position: relative; display: inline-flex;">
-              <q-btn
-                flat round dense icon="edit" size="sm"
-                :style="isAdmin ? 'color: #1565C0;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
-                @click="abrirDialogo(props.row)"
-              />
-              <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
-                <q-tooltip class="pdv-tooltip">Solo los administradores pueden editar</q-tooltip>
-              </div>
-            </div>
+          <q-td :props="props">
+            <div class="row items-center no-wrap" style="gap: 6px; justify-content: center;">
 
-            <!-- Reactivar (solo si inactivo) -->
-            <template v-if="props.row.active === false">
+              <!-- Editar -->
               <div style="position: relative; display: inline-flex;">
-                <q-btn
-                  flat round dense icon="person_add" size="sm"
-                  :style="isAdmin ? 'color: #2E7D32;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
-                  @click="reactivar(props.row)"
+                <button
+                  class="pdv-action-btn pdv-action-blue"
+                  :class="{ 'pdv-action-disabled': !isAdmin }"
+                  @click="abrirDialogo(props.row)"
                 >
-                  <q-tooltip class="pdv-tooltip">Reactivar usuario</q-tooltip>
-                </q-btn>
+                  <q-icon name="edit" size="16px" />
+                </button>
                 <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
-                  <q-tooltip class="pdv-tooltip">Solo los administradores pueden reactivar</q-tooltip>
+                  <q-tooltip class="pdv-tooltip">Solo los administradores pueden editar</q-tooltip>
                 </div>
               </div>
-            </template>
 
-            <!-- Desactivar (solo si activo) -->
-            <template v-else>
-              <div style="position: relative; display: inline-flex;">
-                <q-btn
-                  flat round dense icon="person_off" size="sm"
-                  :style="isAdmin ? 'color: #C0392B;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
-                  @click="pedirDesactivar(props.row)"
-                />
-                <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
-                  <q-tooltip class="pdv-tooltip">Solo los administradores pueden desactivar</q-tooltip>
+              <!-- Reactivar (solo si inactivo) -->
+              <template v-if="props.row.active === false">
+                <div style="position: relative; display: inline-flex;">
+                  <button
+                    class="pdv-action-btn pdv-action-success"
+                    :class="{ 'pdv-action-disabled': !isAdmin }"
+                    @click="reactivar(props.row)"
+                  >
+                    <q-icon name="person_add" size="16px" />
+                  </button>
+                  <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+                    <q-tooltip class="pdv-tooltip">Solo los administradores pueden reactivar</q-tooltip>
+                  </div>
+                  <q-tooltip v-if="isAdmin" class="pdv-tooltip">Reactivar usuario</q-tooltip>
                 </div>
-              </div>
-            </template>
+              </template>
+
+              <!-- Desactivar (solo si activo) -->
+              <template v-else>
+                <div style="position: relative; display: inline-flex;">
+                  <button
+                    class="pdv-action-btn pdv-action-danger"
+                    :class="{ 'pdv-action-disabled': !isAdmin }"
+                    @click="pedirDesactivar(props.row)"
+                  >
+                    <q-icon name="person_off" size="16px" />
+                  </button>
+                  <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+                    <q-tooltip class="pdv-tooltip">Solo los administradores pueden desactivar</q-tooltip>
+                  </div>
+                </div>
+              </template>
+
+            </div>
           </q-td>
+        </template>
+
+        <!-- ── Vista móvil (grid mode) ── -->
+        <template #item="props">
+          <div class="col-12 q-pa-xs">
+            <q-card style="border-radius: 12px; box-shadow: var(--pdv-shadow-card); background: white;">
+              <q-card-section style="padding: 14px 16px;">
+
+                <div class="row items-center no-wrap" style="gap: 12px; margin-bottom: 10px;">
+                  <div class="pdv-avatar pdv-avatar-md">{{ iniciales(props.row.full_name) }}</div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div :style="props.row.active === false ? 'color: #94A3B8; font-weight: 600;' : 'color: #0D1B3E; font-weight: 600;'" style="font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      {{ props.row.full_name }}
+                    </div>
+                    <div style="font-size: 12px; color: #64748B; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ props.row.email }}</div>
+                  </div>
+                  <span :class="['pdv-pill', props.row.active ? 'pdv-pill-success' : 'pdv-pill-error']">
+                    {{ props.row.active ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </div>
+
+                <div class="row items-center justify-between" style="gap: 8px;">
+                  <div class="row q-gutter-xs">
+                    <span
+                      v-for="rol in (props.row.roles || [])"
+                      :key="rol"
+                      class="pdv-pill pdv-pill-navy"
+                      style="text-transform: capitalize;"
+                    >{{ rol }}</span>
+                  </div>
+                  <div class="row items-center no-wrap" style="gap: 6px;">
+                    <div style="position: relative; display: inline-flex;">
+                      <button class="pdv-action-btn pdv-action-blue" :class="{ 'pdv-action-disabled': !isAdmin }" @click="abrirDialogo(props.row)">
+                        <q-icon name="edit" size="16px" />
+                      </button>
+                      <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+                        <q-tooltip class="pdv-tooltip">Solo los administradores pueden editar</q-tooltip>
+                      </div>
+                    </div>
+                    <template v-if="props.row.active === false">
+                      <div style="position: relative; display: inline-flex;">
+                        <button class="pdv-action-btn pdv-action-success" :class="{ 'pdv-action-disabled': !isAdmin }" @click="reactivar(props.row)">
+                          <q-icon name="person_add" size="16px" />
+                        </button>
+                        <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+                          <q-tooltip class="pdv-tooltip">Solo los administradores pueden reactivar</q-tooltip>
+                        </div>
+                      </div>
+                    </template>
+                    <template v-else>
+                      <div style="position: relative; display: inline-flex;">
+                        <button class="pdv-action-btn pdv-action-danger" :class="{ 'pdv-action-disabled': !isAdmin }" @click="pedirDesactivar(props.row)">
+                          <q-icon name="person_off" size="16px" />
+                        </button>
+                        <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+                          <q-tooltip class="pdv-tooltip">Solo los administradores pueden desactivar</q-tooltip>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
+              </q-card-section>
+            </q-card>
+          </div>
         </template>
 
         <template #no-data>
           <EmptyState icon="👥" message="No hay usuarios registrados" />
         </template>
-
         <template #no-results>
           <EmptyState icon="🔍" message="No se encontraron usuarios con ese criterio" />
         </template>
-
         <template #loading>
           <q-inner-loading showing>
             <q-spinner-dots color="primary" size="40px" />
@@ -138,9 +216,9 @@
       </q-table>
     </q-card>
 
-    <!-- Modal crear / editar -->
-    <q-dialog v-model="dialogo">
-      <q-card class="pdv-dialog">
+    <!-- ── Modal crear / editar ── -->
+    <q-dialog v-model="dialogo" :maximized="$q.screen.lt.sm">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important;' : ''">
         <div class="pdv-dialog-title">{{ editando ? 'Editar Usuario' : 'Nuevo Usuario' }}</div>
         <div class="pdv-dialog-body">
           <q-input v-model="form.full_name" label="Nombre completo" />
@@ -152,7 +230,7 @@
             type="password"
           />
           <div>
-            <div style="font-size: 13px; color: #555555; margin-bottom: 8px;">Roles</div>
+            <div style="font-size: 13px; color: #64748B; margin-bottom: 8px;">Roles</div>
             <q-option-group
               v-model="form.roles"
               :options="opcionesRoles"
@@ -169,10 +247,10 @@
       </q-card>
     </q-dialog>
 
-    <!-- Modal confirmar desactivar -->
-    <q-dialog v-model="dialogoDesactivar">
-      <q-card class="pdv-dialog">
-        <div class="pdv-dialog-title" style="color: #C0392B;">Desactivar usuario</div>
+    <!-- ── Modal confirmar desactivar ── -->
+    <q-dialog v-model="dialogoDesactivar" :maximized="$q.screen.lt.sm">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important;' : ''">
+        <div class="pdv-dialog-title" style="color: #991B1B;">Desactivar usuario</div>
         <div class="pdv-dialog-body">
           <p style="margin: 0; font-size: 15px; color: #333333; line-height: 1.5;">
             ¿Desactivar a <strong>{{ usuarioADesactivar?.full_name }}</strong>?
@@ -182,10 +260,8 @@
         <div class="pdv-dialog-actions">
           <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
           <q-btn
-            unelevated
-            label="Desactivar"
-            :loading="procesando"
-            style="background: #C0392B; color: white; border-radius: 6px; padding: 0 24px; font-weight: 600;"
+            unelevated label="Desactivar" :loading="procesando"
+            style="background: #991B1B; color: white; border-radius: 8px; padding: 0 24px; font-weight: 600;"
             @click="confirmarDesactivar"
           />
         </div>
@@ -232,6 +308,10 @@ const columnas = [
 
 const usuarios = ref([])
 const form = ref({ full_name: '', email: '', password: '', roles: [] })
+
+function iniciales(nombre) {
+  return (nombre ?? '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+}
 
 async function cargarUsuarios() {
   cargando.value = true
@@ -327,13 +407,3 @@ async function reactivar(usuario) {
   }
 }
 </script>
-
-<style>
-.pdv-tooltip {
-  background: #0D1B3E;
-  color: white;
-  font-size: 12px;
-  border-radius: 6px;
-  padding: 4px 10px;
-}
-</style>

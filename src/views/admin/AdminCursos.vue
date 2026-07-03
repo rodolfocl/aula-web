@@ -1,17 +1,19 @@
 <template>
   <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
     <div class="row items-center justify-between q-mb-md">
-      <div class="text-h5 text-weight-bold" style="color: #0D1B3E;">Gestión de Cursos</div>
+      <div style="color: #0D1B3E; font-size: 20px; font-weight: 700;">Gestión de Cursos</div>
       <div class="row items-center q-gutter-md">
         <q-toggle
           v-model="mostrarInactivos"
           label="Mostrar inactivos"
-          style="color: #555555; font-size: 13px;"
+          style="color: #64748B; font-size: 13px;"
         />
         <div style="position: relative; display: inline-flex;">
           <q-btn
             unelevated icon="add" label="Nuevo curso"
-            :style="isAdmin ? 'background: #0D1B3E; color: white; border-radius: 8px;' : 'background: #CCCCCC; color: #888888; border-radius: 8px; opacity: 0.5; pointer-events: none;'"
+            :style="isAdmin
+              ? 'background: #0D1B3E; color: white; border-radius: 8px;'
+              : 'background: #E2E8F0; color: #94A3B8; border-radius: 8px; pointer-events: none;'"
             @click="abrirDialogo()"
           />
           <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
@@ -21,55 +23,51 @@
       </div>
     </div>
 
-    <!-- Spinner carga inicial -->
     <div v-if="cargando" class="row justify-center q-mt-xl">
       <q-spinner-dots color="primary" size="48px" />
     </div>
 
-    <!-- Sin cursos -->
     <EmptyState v-else-if="cursos.length === 0" icon="📚" message="No hay cursos registrados" />
 
-    <!-- Grilla de cursos -->
     <div v-else class="row q-col-gutter-md items-stretch">
       <div v-for="curso in cursos" :key="curso.id" class="col-12 col-sm-6 col-lg-4" style="display: flex;">
         <q-card
           flat
           class="course-card"
           :style="curso.active === false
-            ? 'background: #F5F5F5; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;'
-            : 'background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;'"
+            ? 'background: #F8FAFC;'
+            : 'background: white;'"
         >
-          <q-card-section style="height: 100%;">
-            <div class="row items-start justify-between no-wrap" style="height: 100%;">
+          <q-card-section style="height: 100%; padding: 18px 20px;">
+            <div class="row items-start justify-between no-wrap" style="height: 100%; gap: 12px;">
               <div style="flex: 1; min-width: 0;">
                 <div class="row items-center q-gutter-xs q-mb-xs">
                   <span
                     class="text-subtitle1 text-weight-bold"
-                    :style="curso.active === false ? 'color: #999999;' : 'color: #0D1B3E;'"
+                    :style="curso.active === false ? 'color: #94A3B8;' : 'color: #0D1B3E;'"
                   >{{ curso.name }}</span>
-                  <q-badge
+                  <span
                     v-if="curso.active === false"
-                    style="background: #E0E0E0; color: #757575; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;"
-                  >
-                    Inactivo
-                  </q-badge>
+                    class="pdv-pill pdv-pill-neutral"
+                    style="font-size: 10px;"
+                  >Inactivo</span>
                 </div>
                 <div
                   v-if="curso.description"
                   class="text-body2 course-description"
-                  :style="curso.active === false ? 'color: #BDBDBD; line-height: 1.5;' : 'color: #555555; line-height: 1.5;'"
+                  :style="curso.active === false ? 'color: #CBD5E1;' : 'color: #64748B;'"
                 >
                   {{ curso.description }}
                 </div>
               </div>
-              <div class="row items-center q-ml-sm" style="flex-shrink: 0;">
+              <div class="row items-center" style="flex-shrink: 0; gap: 6px;">
                 <div style="position: relative; display: inline-flex;">
                   <button
-                    class="curso-btn curso-btn-edit"
-                    :class="{ 'btn-disabled': !isAdmin }"
+                    class="pdv-action-btn pdv-action-blue"
+                    :class="{ 'pdv-action-disabled': !isAdmin }"
                     @click="abrirDialogo(curso)"
                   >
-                    <i class="ti ti-pencil" style="font-size: 18px;" />
+                    <i class="ti ti-pencil" style="font-size: 16px;" />
                   </button>
                   <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
                     <q-tooltip class="pdv-tooltip">Solo los administradores pueden editar</q-tooltip>
@@ -77,11 +75,11 @@
                 </div>
                 <div v-if="curso.active !== false" style="position: relative; display: inline-flex;">
                   <button
-                    class="curso-btn curso-btn-deactivate"
-                    :class="{ 'btn-disabled': !isAdmin }"
+                    class="pdv-action-btn pdv-action-danger"
+                    :class="{ 'pdv-action-disabled': !isAdmin }"
                     @click="abrirDesactivar(curso)"
                   >
-                    <i class="ti ti-eye-off" style="font-size: 18px;" />
+                    <i class="ti ti-eye-off" style="font-size: 16px;" />
                   </button>
                   <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
                     <q-tooltip class="pdv-tooltip">Solo los administradores pueden desactivar</q-tooltip>
@@ -95,8 +93,8 @@
     </div>
 
     <!-- Dialog crear/editar -->
-    <q-dialog v-model="dialogo">
-      <q-card class="pdv-dialog">
+    <q-dialog v-model="dialogo" :maximized="$q.screen.lt.sm">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : ''">
         <div class="pdv-dialog-title">{{ editando ? 'Editar Curso' : 'Nuevo Curso' }}</div>
         <div class="pdv-dialog-body">
           <q-input v-model="form.name" label="Nombre del curso" />
@@ -110,9 +108,9 @@
     </q-dialog>
 
     <!-- Dialog confirmar desactivación -->
-    <q-dialog v-model="dialogoDesactivar">
-      <q-card class="pdv-dialog">
-        <div class="pdv-dialog-title" style="color: #C0392B;">Desactivar curso</div>
+    <q-dialog v-model="dialogoDesactivar" :maximized="$q.screen.lt.sm">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : ''">
+        <div class="pdv-dialog-title" style="color: #991B1B;">Desactivar curso</div>
         <div class="pdv-dialog-body">
           <p style="margin: 0; font-size: 15px; color: #333333; line-height: 1.5;">
             ¿Desactivar <strong>{{ cursoADesactivar?.name }}</strong>?
@@ -122,10 +120,8 @@
         <div class="pdv-dialog-actions">
           <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
           <q-btn
-            unelevated
-            label="Desactivar"
-            :loading="desactivando"
-            style="background: #C0392B; color: white; border-radius: 6px; padding: 0 24px; font-weight: 600;"
+            unelevated label="Desactivar" :loading="desactivando"
+            style="background: #991B1B; color: white; border-radius: 8px; padding: 0 24px; font-weight: 600;"
             @click="confirmarDesactivar"
           />
         </div>
@@ -221,9 +217,19 @@ async function confirmarDesactivar() {
 <style scoped>
 .course-card {
   width: 100%;
-  height: 120px;
+  min-height: 110px;
   display: flex;
   flex-direction: column;
+  border-radius: 14px !important;
+  box-shadow: var(--pdv-shadow-card) !important;
+  border: none !important;
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.course-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06) !important;
+  transform: translateY(-1px);
 }
 
 .course-description {
@@ -231,30 +237,6 @@ async function confirmarDesactivar() {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.curso-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #BDBDBD;
-  transition: background 0.15s, color 0.15s;
-  padding: 0;
-}
-
-.curso-btn-edit:hover {
-  background: rgba(13, 27, 62, 0.08);
-  color: #0D1B3E;
-}
-
-.curso-btn-deactivate:hover {
-  background: rgba(192, 57, 43, 0.08);
-  color: #C0392B;
+  line-height: 1.5;
 }
 </style>

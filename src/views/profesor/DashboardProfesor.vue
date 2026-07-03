@@ -1,6 +1,6 @@
 <template>
   <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
-    <div class="text-h5 text-weight-bold q-mb-lg" style="color: #0D1B3E;">Mis Clases</div>
+    <div style="color: #0D1B3E; font-size: 20px; font-weight: 700;" class="q-mb-lg">Mis Clases</div>
 
     <div v-if="cargando" class="row justify-center q-mt-xl">
       <q-spinner-dots color="primary" size="48px" />
@@ -9,50 +9,60 @@
     <EmptyState v-else-if="instancias.length === 0" icon="🏫" message="No tienes clases asignadas actualmente" />
 
     <div v-else>
-      <div class="seg-control q-mb-md">
-        <button
-          :class="['seg-btn', tabActual === 'activos' && 'seg-btn--active']"
-          @click="tabActual = 'activos'"
-        >
-          Activos <span class="seg-count">{{ cursosActivos.length }}</span>
-        </button>
-        <button
-          :class="['seg-btn', tabActual === 'finalizados' && 'seg-btn--active']"
-          @click="tabActual = 'finalizados'"
-        >
-          Finalizados <span class="seg-count">{{ cursosFinalizados.length }}</span>
-        </button>
+      <!-- Selector Activos / Finalizados -->
+      <div class="q-mb-lg">
+        <div class="seg-control">
+          <button
+            :class="['seg-btn', tabActual === 'activos' && 'seg-btn--active']"
+            @click="tabActual = 'activos'"
+          >
+            Activos <span class="seg-count">{{ cursosActivos.length }}</span>
+          </button>
+          <button
+            :class="['seg-btn', tabActual === 'finalizados' && 'seg-btn--active']"
+            @click="tabActual = 'finalizados'"
+          >
+            Finalizados <span class="seg-count">{{ cursosFinalizados.length }}</span>
+          </button>
+        </div>
       </div>
 
       <q-tab-panels v-model="tabActual" animated style="background: transparent;">
+
         <!-- Panel: Activos -->
         <q-tab-panel name="activos" class="q-pa-none">
           <EmptyState v-if="cursosActivos.length === 0" icon="🏫" message="No tienes clases activas actualmente" />
           <div v-else class="row q-col-gutter-md">
             <div v-for="inst in cursosActivos" :key="inst.id" class="col-12 col-sm-6 col-lg-4">
               <q-card flat class="curso-card">
-                <div class="q-pa-md" style="background: #0D1B3E;">
+                <!-- Header -->
+                <div class="q-pa-md card-header-active">
                   <div class="row items-start justify-between no-wrap q-gutter-xs">
                     <div class="text-white text-subtitle1 text-weight-bold" style="flex: 1;">{{ inst.course_name }}</div>
                   </div>
-                  <div class="text-caption text-weight-bold q-mt-xs" style="color: #C9A96E;">{{ inst.year }} · Período {{ inst.period }}</div>
+                  <div class="text-caption text-weight-bold q-mt-xs" style="color: rgba(255,255,255,0.7);">
+                    {{ inst.year }} · Período {{ inst.period }}
+                  </div>
                 </div>
+
+                <!-- Sub-header: alumno count + inscribir -->
                 <div class="row items-center justify-between q-px-md q-py-sm">
-                  <div style="display: flex; align-items: center; gap: 7px; color: #0D1B3E; font-size: 15px; font-weight: 600;">
-                    <q-icon name="people" size="20px" style="color: #0D1B3E;" />
-                    {{ inst.alumnos?.length ?? 0 }} alumnos inscritos
+                  <div style="display: flex; align-items: center; gap: 7px; color: #0D1B3E; font-size: 14px; font-weight: 600;">
+                    <q-icon name="people" size="18px" style="color: #64748B;" />
+                    {{ inst.alumnos?.length ?? 0 }} alumnos
                   </div>
                   <q-btn
-                    dense
-                    unelevated
-                    icon="person_add"
-                    style="background: #0D1B3E; color: white; padding: 0 14px; height: 32px; border-radius: 6px;"
+                    dense unelevated icon="person_add"
+                    style="background: #0D1B3E; color: white; padding: 0 12px; height: 30px; border-radius: 8px;"
                     @click="abrirInscribirAlumno(inst)"
                   >
                     <q-tooltip class="pdv-tooltip">Inscribir alumno</q-tooltip>
                   </q-btn>
                 </div>
-                <q-separator style="border-color: rgba(0,0,0,0.06);" />
+
+                <q-separator style="border-color: #F1F5F9;" />
+
+                <!-- Lista de alumnos -->
                 <div class="alumno-list">
                   <div v-if="inst.cargandoAlumnos" class="row justify-center q-pa-md">
                     <q-spinner-dots color="primary" size="28px" />
@@ -61,55 +71,54 @@
                     <div
                       v-for="alumno in inst.alumnos"
                       :key="alumno.id"
-                      style="display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 0.5px solid #EEEEEE;"
+                      class="alumno-row"
                     >
-                      <div style="width: 36px; height: 36px; border-radius: 50%; background: #1A2F6B; color: white; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        {{ iniciales(alumno.full_name) }}
-                      </div>
+                      <div class="pdv-avatar pdv-avatar-sm">{{ iniciales(alumno.full_name) }}</div>
                       <div style="flex: 1; min-width: 0;">
-                        <div style="font-size: 14px; color: #0D1B3E; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ alumno.full_name }}</div>
-                        <div style="font-size: 12px; color: #888888;">{{ Number(alumno.absence_count) === 0 ? 'Sin ausencias' : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}</div>
+                        <div style="font-size: 13.5px; color: #0D1B3E; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                          {{ alumno.full_name }}
+                        </div>
+                        <div style="font-size: 11px; color: #94A3B8;">
+                          {{ Number(alumno.absence_count) === 0 ? 'Sin ausencias' : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}
+                        </div>
                       </div>
                       <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                        <span :style="badgeStyle(alumno.absence_count)">{{ badgeLabel(alumno.absence_count) }}</span>
+                        <span :class="['pdv-pill', faltasPill(alumno.absence_count)]">
+                          {{ badgeLabel(alumno.absence_count) }}
+                        </span>
                         <q-icon
                           v-if="inst.max_absences != null && Number(alumno.absence_count) > Number(inst.max_absences)"
-                          name="error"
-                          size="18px"
-                          style="color: #C0392B;"
+                          name="error" size="16px" style="color: #991B1B;"
                         >
                           <q-tooltip class="pdv-tooltip">Alumno reprobado por asistencia</q-tooltip>
                         </q-icon>
                       </div>
                     </div>
                   </div>
-                  <EmptyState v-else icon="👤" message="No hay alumnos inscritos en este curso" />
+                  <EmptyState v-else icon="👤" message="No hay alumnos inscritos" />
                 </div>
-                <q-separator style="border-color: rgba(0,0,0,0.06);" />
+
+                <q-separator style="border-color: #F1F5F9;" />
+
+                <!-- Acciones -->
                 <q-card-actions class="column q-pa-sm q-gutter-xs">
                   <div class="row q-gutter-xs full-width" style="margin-left: 0;">
                     <q-btn
-                      unelevated
-                      icon="how_to_reg"
-                      label="Asistencia"
+                      unelevated icon="how_to_reg" label="Asistencia"
                       :to="{ name: 'PasarAsistencia', params: { id: inst.id } }"
                       style="background: #0D1B3E; color: white; border-radius: 8px; flex: 1;"
                       class="q-px-xs"
                     />
                     <q-btn
-                      unelevated
-                      icon="edit"
-                      label="Notas"
+                      unelevated icon="edit" label="Notas"
                       :to="{ name: 'RegistrarNotas', params: { id: inst.id } }"
                       style="background: #0D1B3E; color: white; border-radius: 8px; flex: 1;"
                       class="q-px-xs"
                     />
                   </div>
                   <q-btn
-                    flat
-                    dense
-                    label="Finalizar curso"
-                    style="color: #C0392B; font-size: 12px; font-weight: 600;"
+                    flat dense label="Finalizar curso"
+                    style="color: #991B1B; font-size: 12px; font-weight: 600;"
                     class="full-width"
                     @click="abrirFinalizar(inst)"
                   />
@@ -125,20 +134,22 @@
           <div v-else class="row q-col-gutter-md">
             <div v-for="inst in cursosFinalizados" :key="inst.id" class="col-12 col-sm-6 col-lg-4">
               <q-card flat class="curso-card">
-                <div class="q-pa-md" style="background: #616161;">
+                <div class="q-pa-md" style="background: #64748B;">
                   <div class="row items-start justify-between no-wrap q-gutter-xs">
                     <div class="text-white text-subtitle1 text-weight-bold" style="flex: 1;">{{ inst.course_name }}</div>
-                    <q-badge style="background: rgba(255,255,255,0.15); color: white; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; flex-shrink: 0;">
+                    <span class="pdv-pill" style="background: rgba(255,255,255,0.15); color: white; font-size: 10px; flex-shrink: 0;">
                       Finalizado
-                    </q-badge>
+                    </span>
                   </div>
-                  <div class="text-caption text-weight-bold q-mt-xs" style="color: #C9A96E;">{{ inst.year }} · Período {{ inst.period }}</div>
+                  <div class="text-caption text-weight-bold q-mt-xs" style="color: rgba(255,255,255,0.7);">
+                    {{ inst.year }} · Período {{ inst.period }}
+                  </div>
                 </div>
-                <div class="q-px-md q-py-sm" style="display: flex; align-items: center; gap: 7px; color: #0D1B3E; font-size: 15px; font-weight: 600;">
-                  <q-icon name="people" size="20px" style="color: #0D1B3E;" />
-                  {{ inst.alumnos?.length ?? 0 }} alumnos inscritos
+                <div class="q-px-md q-py-sm" style="display: flex; align-items: center; gap: 7px; color: #0D1B3E; font-size: 14px; font-weight: 600;">
+                  <q-icon name="people" size="18px" style="color: #64748B;" />
+                  {{ inst.alumnos?.length ?? 0 }} alumnos
                 </div>
-                <q-separator style="border-color: rgba(0,0,0,0.06);" />
+                <q-separator style="border-color: #F1F5F9;" />
                 <div class="alumno-list">
                   <div v-if="inst.cargandoAlumnos" class="row justify-center q-pa-md">
                     <q-spinner-dots color="primary" size="28px" />
@@ -147,41 +158,44 @@
                     <div
                       v-for="alumno in inst.alumnos"
                       :key="alumno.id"
-                      style="display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 0.5px solid #EEEEEE;"
+                      class="alumno-row"
                     >
-                      <div style="width: 36px; height: 36px; border-radius: 50%; background: #1A2F6B; color: white; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        {{ iniciales(alumno.full_name) }}
-                      </div>
+                      <div class="pdv-avatar pdv-avatar-sm">{{ iniciales(alumno.full_name) }}</div>
                       <div style="flex: 1; min-width: 0;">
-                        <div style="font-size: 14px; color: #0D1B3E; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ alumno.full_name }}</div>
-                        <div style="font-size: 12px; color: #888888;">{{ Number(alumno.absence_count) === 0 ? 'Sin ausencias' : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}</div>
+                        <div style="font-size: 13.5px; color: #0D1B3E; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                          {{ alumno.full_name }}
+                        </div>
+                        <div style="font-size: 11px; color: #94A3B8;">
+                          {{ Number(alumno.absence_count) === 0 ? 'Sin ausencias' : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}
+                        </div>
                       </div>
                       <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                        <span :style="badgeStyle(alumno.absence_count)">{{ badgeLabel(alumno.absence_count) }}</span>
+                        <span :class="['pdv-pill', faltasPill(alumno.absence_count)]">
+                          {{ badgeLabel(alumno.absence_count) }}
+                        </span>
                         <q-icon
                           v-if="inst.max_absences != null && Number(alumno.absence_count) > Number(inst.max_absences)"
-                          name="error"
-                          size="18px"
-                          style="color: #C0392B;"
+                          name="error" size="16px" style="color: #991B1B;"
                         >
                           <q-tooltip class="pdv-tooltip">Alumno reprobado por asistencia</q-tooltip>
                         </q-icon>
                       </div>
                     </div>
                   </div>
-                  <EmptyState v-else icon="👤" message="No hay alumnos inscritos en este curso" />
+                  <EmptyState v-else icon="👤" message="No hay alumnos inscritos" />
                 </div>
               </q-card>
             </div>
           </div>
         </q-tab-panel>
+
       </q-tab-panels>
     </div>
 
     <!-- Modal finalizar curso -->
-    <q-dialog v-model="dialogoFinalizar">
-      <q-card class="pdv-dialog">
-        <div class="pdv-dialog-title" style="color: #C0392B;">Finalizar curso</div>
+    <q-dialog v-model="dialogoFinalizar" :maximized="$q.screen.lt.sm">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : ''">
+        <div class="pdv-dialog-title" style="color: #991B1B;">Finalizar curso</div>
         <div class="pdv-dialog-body">
           <p style="margin: 0; font-size: 15px; color: #333333; line-height: 1.5;">
             ¿Estás seguro que deseas finalizar
@@ -198,11 +212,9 @@
         <div class="pdv-dialog-actions">
           <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
           <q-btn
-            unelevated
-            label="Finalizar curso"
-            :loading="finalizando"
+            unelevated label="Finalizar curso" :loading="finalizando"
             :disable="motivoFinalizar.trim().length < 10"
-            style="background: #C0392B; color: white; border-radius: 6px; padding: 0 24px; font-weight: 600;"
+            style="background: #991B1B; color: white; border-radius: 8px; padding: 0 24px; font-weight: 600;"
             @click="confirmarFinalizar"
           />
         </div>
@@ -210,48 +222,43 @@
     </q-dialog>
 
     <!-- Modal inscribir alumno -->
-    <q-dialog v-model="dialogoInscribir">
-      <q-card class="pdv-dialog" style="min-width: 440px; max-width: 500px;">
+    <q-dialog v-model="dialogoInscribir" :maximized="$q.screen.lt.sm">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : 'min-width: 440px; max-width: 500px;'">
         <div class="pdv-dialog-title">Inscribir alumno</div>
         <div class="pdv-dialog-body">
-          <div style="font-size: 13px; color: #666; margin-top: -8px;">
+          <div style="font-size: 13px; color: #64748B; margin-top: -8px;">
             {{ instanciaInscribir?.course_name }} · {{ instanciaInscribir?.year }} — Período {{ instanciaInscribir?.period }}
           </div>
           <q-input
             v-model="busquedaAlumno"
             placeholder="Buscar por nombre..."
-            dense
-            outlined
-            clearable
+            dense outlined clearable
           >
-            <template #prepend><q-icon name="search" /></template>
+            <template #prepend><q-icon name="search" color="grey-5" /></template>
           </q-input>
           <div v-if="buscandoAlumnos" class="row justify-center q-py-lg">
             <q-spinner-dots color="primary" size="32px" />
           </div>
-          <div v-else-if="alumnosFiltrados.length === 0" style="text-align: center; color: #999; padding: 20px 0; font-size: 14px;">
+          <div v-else-if="alumnosFiltrados.length === 0" style="text-align: center; color: #94A3B8; padding: 20px 0; font-size: 14px;">
             No hay alumnos disponibles para inscribir
           </div>
           <div v-else style="max-height: 320px; overflow-y: auto;">
             <div
               v-for="alumno in alumnosFiltrados"
               :key="alumno.id"
-              style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 0.5px solid #EEEEEE;"
+              style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #F1F5F9;"
             >
               <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 32px; height: 32px; border-radius: 50%; background: #1A2F6B; color: white; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                  {{ iniciales(alumno.full_name) }}
-                </div>
+                <div class="pdv-avatar pdv-avatar-sm">{{ iniciales(alumno.full_name) }}</div>
                 <div style="font-size: 14px; color: #0D1B3E; font-weight: 500;">{{ alumno.full_name }}</div>
               </div>
-              <q-icon
-                name="person_add"
-                size="22px"
-                style="color: #0D1B3E; cursor: pointer; flex-shrink: 0;"
+              <button
+                class="pdv-action-btn pdv-action-success"
                 @click="inscribirAlumno(alumno)"
               >
+                <q-icon name="person_add" size="16px" />
                 <q-tooltip class="pdv-tooltip">Inscribir</q-tooltip>
-              </q-icon>
+              </button>
             </div>
           </div>
         </div>
@@ -313,7 +320,7 @@ const cursosFinalizados = computed(() =>
 )
 
 function iniciales(nombre) {
-  return (nombre ?? '?').split(' ').map(n => n[0]).slice(0, 2).join('')
+  return (nombre ?? '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
 }
 
 function badgeLabel(faltas) {
@@ -323,12 +330,11 @@ function badgeLabel(faltas) {
   return `${n} faltas`
 }
 
-function badgeStyle(faltas) {
+function faltasPill(faltas) {
   const n = Number(faltas) || 0
-  const base = 'padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
-  if (n === 0) return `background: #E8F5E9; color: #27AE60; ${base}`
-  if (n <= 2)  return `background: #FFF8E1; color: #E67E22; ${base}`
-  return `background: #FFEBEE; color: #C0392B; ${base}`
+  if (n === 0) return 'pdv-pill-success'
+  if (n <= 2)  return 'pdv-pill-warning'
+  return 'pdv-pill-error'
 }
 
 const alumnosFiltrados = computed(() => {
@@ -434,12 +440,22 @@ onMounted(async () => {
 <style scoped>
 .curso-card {
   background: white;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px !important;
+  box-shadow: var(--pdv-shadow-card) !important;
+  border: none !important;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   height: 460px;
+  transition: box-shadow 0.2s;
+}
+
+.curso-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06) !important;
+}
+
+.card-header-active {
+  background: #0D1B3E;
 }
 
 .alumno-list {
@@ -448,24 +464,26 @@ onMounted(async () => {
   overflow-y: auto;
 }
 
-.alumno-list::-webkit-scrollbar {
-  width: 4px;
+.alumno-list::-webkit-scrollbar { width: 4px; }
+.alumno-list::-webkit-scrollbar-track { background: transparent; }
+.alumno-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
+
+.alumno-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 4px;
+  border-bottom: 1px solid #F8FAFC;
 }
 
-.alumno-list::-webkit-scrollbar-track {
-  background: transparent;
-}
+.alumno-row:last-child { border-bottom: none; }
 
-.alumno-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 2px;
-}
-
+/* ── Selector Activos / Finalizados ── */
 .seg-control {
   display: inline-flex;
   align-items: center;
-  background: rgba(13, 27, 62, 0.07);
-  border-radius: 20px;
+  background: rgba(13,27,62,0.07);
+  border-radius: 22px;
   padding: 3px;
   gap: 2px;
 }
@@ -476,12 +494,12 @@ onMounted(async () => {
   gap: 6px;
   border: none;
   background: transparent;
-  border-radius: 17px;
-  padding: 0 16px;
-  height: 32px;
+  border-radius: 19px;
+  padding: 0 18px;
+  height: 34px;
   font-size: 14px;
   font-weight: 600;
-  color: rgba(13, 27, 62, 0.45);
+  color: rgba(13,27,62,0.45);
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;
   white-space: nowrap;
@@ -495,7 +513,7 @@ onMounted(async () => {
 .seg-count {
   font-size: 11px;
   font-weight: 700;
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0,0,0,0.1);
   border-radius: 10px;
   padding: 1px 6px;
   line-height: 1.5;
@@ -503,6 +521,6 @@ onMounted(async () => {
 }
 
 .seg-btn--active .seg-count {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255,255,255,0.2);
 }
 </style>

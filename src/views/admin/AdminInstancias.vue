@@ -1,11 +1,13 @@
 <template>
   <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
     <div class="row items-center justify-between q-mb-md">
-      <div class="text-h5 text-weight-bold" style="color: #0D1B3E;">Gestión de Instancias</div>
+      <div style="color: #0D1B3E; font-size: 20px; font-weight: 700;">Gestión de Instancias</div>
       <div style="position: relative; display: inline-flex;">
         <q-btn
           unelevated icon="add" label="Nueva instancia"
-          :style="isAdmin ? 'background: #0D1B3E; color: white; border-radius: 8px;' : 'background: #CCCCCC; color: #888888; border-radius: 8px; opacity: 0.5; pointer-events: none;'"
+          :style="isAdmin
+            ? 'background: #0D1B3E; color: white; border-radius: 8px;'
+            : 'background: #E2E8F0; color: #94A3B8; border-radius: 8px; pointer-events: none;'"
           @click="abrirDialogo()"
         />
         <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
@@ -14,7 +16,7 @@
       </div>
     </div>
 
-    <q-card flat style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
+    <q-card class="pdv-table" style="background: white; border-radius: 14px; box-shadow: var(--pdv-shadow-card);">
       <q-table
         :rows="instancias"
         :columns="columnas"
@@ -23,6 +25,7 @@
         :loading="cargando"
         :pagination="{ rowsPerPage: 15 }"
         :rows-per-page-options="[5, 10, 15, 25, 50, 0]"
+        :grid="$q.screen.lt.sm"
       >
         <template #no-data>
           <EmptyState icon="📅" message="No hay instancias registradas" />
@@ -34,52 +37,128 @@
           </q-inner-loading>
         </template>
 
+        <!-- ── Estado ── -->
         <template #body-cell-status="props">
-          <q-td :props="props">
-            <q-badge :style="badgeEstado(props.value)">{{ labelEstado(props.value) }}</q-badge>
+          <q-td :props="props" style="text-align: center;">
+            <span :class="['pdv-pill', pillEstado(props.value)]">{{ labelEstado(props.value) }}</span>
           </q-td>
         </template>
 
+        <!-- ── Acciones ── -->
         <template #body-cell-acciones="props">
-          <q-td :props="props" class="q-gutter-xs">
-            <div style="position: relative; display: inline-flex;">
-              <q-btn
-                flat round dense icon="edit" size="sm"
-                :style="isAdmin ? 'color: #0D1B3E;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
-                @click="abrirDialogo(props.row)"
-              />
-              <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
-                <q-tooltip class="pdv-tooltip">Solo los administradores pueden editar</q-tooltip>
+          <q-td :props="props">
+            <div class="row items-center no-wrap" style="gap: 6px; justify-content: center;">
+
+              <!-- Editar -->
+              <div style="position: relative; display: inline-flex;">
+                <button
+                  class="pdv-action-btn pdv-action-blue"
+                  :class="{ 'pdv-action-disabled': !isAdmin }"
+                  @click="abrirDialogo(props.row)"
+                >
+                  <q-icon name="edit" size="16px" />
+                </button>
+                <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+                  <q-tooltip class="pdv-tooltip">Solo los administradores pueden editar</q-tooltip>
+                </div>
               </div>
-            </div>
-            <div v-if="props.row.status === 'active'" style="position: relative; display: inline-flex;">
-              <q-btn
-                flat round dense icon="block" size="sm"
-                :style="isAdmin ? 'color: #C0392B;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
-                @click="abrirCierre(props.row)"
-              />
-              <div style="position: absolute; inset: 0; cursor: not-allowed;">
-                <q-tooltip class="pdv-tooltip">{{ isAdmin ? 'Cerrar instancia' : 'Solo los administradores pueden cerrar instancias' }}</q-tooltip>
+
+              <!-- Cerrar (si activa) -->
+              <div v-if="props.row.status === 'active'" style="position: relative; display: inline-flex;">
+                <button
+                  class="pdv-action-btn pdv-action-danger"
+                  :class="{ 'pdv-action-disabled': !isAdmin }"
+                  @click="abrirCierre(props.row)"
+                >
+                  <q-icon name="block" size="16px" />
+                </button>
+                <div style="position: absolute; inset: 0; cursor: not-allowed;">
+                  <q-tooltip class="pdv-tooltip">{{ isAdmin ? 'Cerrar instancia' : 'Solo los administradores pueden cerrar' }}</q-tooltip>
+                </div>
               </div>
-            </div>
-            <div v-if="props.row.status === 'finished'" style="position: relative; display: inline-flex;">
-              <q-btn
-                flat round dense icon="play_circle_outline" size="sm"
-                :style="isAdmin ? 'color: #2E7D32;' : 'color: #AAAAAA; opacity: 0.5; pointer-events: none;'"
-                @click="abrirReapertura(props.row)"
-              />
-              <div style="position: absolute; inset: 0; cursor: not-allowed;">
-                <q-tooltip class="pdv-tooltip">{{ isAdmin ? 'Reabrir instancia' : 'Solo los administradores pueden reabrir instancias' }}</q-tooltip>
+
+              <!-- Reabrir (si finalizada) -->
+              <div v-if="props.row.status === 'finished'" style="position: relative; display: inline-flex;">
+                <button
+                  class="pdv-action-btn pdv-action-success"
+                  :class="{ 'pdv-action-disabled': !isAdmin }"
+                  @click="abrirReapertura(props.row)"
+                >
+                  <q-icon name="play_circle_outline" size="16px" />
+                </button>
+                <div style="position: absolute; inset: 0; cursor: not-allowed;">
+                  <q-tooltip class="pdv-tooltip">{{ isAdmin ? 'Reabrir instancia' : 'Solo los administradores pueden reabrir' }}</q-tooltip>
+                </div>
               </div>
+
             </div>
           </q-td>
         </template>
+
+        <!-- ── Vista móvil (grid mode) ── -->
+        <template #item="props">
+          <div class="col-12 q-pa-xs">
+            <q-card style="border-radius: 12px; box-shadow: var(--pdv-shadow-card); background: white;">
+              <q-card-section style="padding: 14px 16px;">
+
+                <div class="row items-start justify-between" style="gap: 8px; margin-bottom: 8px;">
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="color: #0D1B3E; font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      {{ props.row.course_name }}
+                    </div>
+                    <div style="color: #64748B; font-size: 12px; margin-top: 2px;">
+                      {{ props.row.teacher_name }}
+                    </div>
+                  </div>
+                  <span :class="['pdv-pill', pillEstado(props.row.status)]">{{ labelEstado(props.row.status) }}</span>
+                </div>
+
+                <div class="row items-center justify-between" style="gap: 8px;">
+                  <div style="color: #475569; font-size: 12px;">
+                    {{ props.row.year }} · Período {{ props.row.period }}
+                    <template v-if="props.row.start_date">
+                      &nbsp;·&nbsp; {{ props.row.start_date?.slice(0,10) }} → {{ props.row.end_date?.slice(0,10) }}
+                    </template>
+                  </div>
+                  <div class="row items-center no-wrap" style="gap: 6px;">
+                    <div style="position: relative; display: inline-flex;">
+                      <button class="pdv-action-btn pdv-action-blue" :class="{ 'pdv-action-disabled': !isAdmin }" @click="abrirDialogo(props.row)">
+                        <q-icon name="edit" size="16px" />
+                      </button>
+                      <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
+                        <q-tooltip class="pdv-tooltip">Solo los administradores pueden editar</q-tooltip>
+                      </div>
+                    </div>
+                    <div v-if="props.row.status === 'active'" style="position: relative; display: inline-flex;">
+                      <button class="pdv-action-btn pdv-action-danger" :class="{ 'pdv-action-disabled': !isAdmin }" @click="abrirCierre(props.row)">
+                        <q-icon name="block" size="16px" />
+                      </button>
+                      <div style="position: absolute; inset: 0; cursor: not-allowed;">
+                        <q-tooltip class="pdv-tooltip">{{ isAdmin ? 'Cerrar instancia' : 'Solo los administradores pueden cerrar' }}</q-tooltip>
+                      </div>
+                    </div>
+                    <div v-if="props.row.status === 'finished'" style="position: relative; display: inline-flex;">
+                      <button class="pdv-action-btn pdv-action-success" :class="{ 'pdv-action-disabled': !isAdmin }" @click="abrirReapertura(props.row)">
+                        <q-icon name="play_circle_outline" size="16px" />
+                      </button>
+                      <div style="position: absolute; inset: 0; cursor: not-allowed;">
+                        <q-tooltip class="pdv-tooltip">{{ isAdmin ? 'Reabrir instancia' : 'Solo los administradores pueden reabrir' }}</q-tooltip>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </q-card-section>
+            </q-card>
+          </div>
+        </template>
+
       </q-table>
     </q-card>
 
-    <!-- Dialog crear/editar -->
-    <q-dialog v-model="dialogo">
-      <q-card class="pdv-dialog">
+    <!-- ── Dialog crear/editar ── -->
+    <q-dialog v-model="dialogo" :maximized="$q.screen.lt.sm">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : ''">
         <div class="pdv-dialog-title">{{ editando ? 'Editar Instancia' : 'Nueva Instancia' }}</div>
         <div class="pdv-dialog-body">
           <q-select
@@ -115,10 +194,10 @@
       </q-card>
     </q-dialog>
 
-    <!-- Dialog cerrar instancia -->
-    <q-dialog v-model="dialogoCierre">
-      <q-card class="pdv-dialog">
-        <div class="pdv-dialog-title" style="color: #C0392B;">Cerrar instancia</div>
+    <!-- ── Dialog cerrar instancia ── -->
+    <q-dialog v-model="dialogoCierre" :maximized="$q.screen.lt.sm">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : ''">
+        <div class="pdv-dialog-title" style="color: #991B1B;">Cerrar instancia</div>
         <div class="pdv-dialog-body">
           <p style="margin: 0; font-size: 15px; color: #333333; line-height: 1.5;">
             ¿Estás seguro que deseas cerrar
@@ -132,17 +211,17 @@
           <q-btn
             unelevated label="Cerrar instancia" :loading="cerrando"
             :disable="motivoCierre.trim().length < 10"
-            style="background: #C0392B; color: white; border-radius: 6px; padding: 0 24px; font-weight: 600;"
+            style="background: #991B1B; color: white; border-radius: 8px; padding: 0 24px; font-weight: 600;"
             @click="confirmarCierre"
           />
         </div>
       </q-card>
     </q-dialog>
 
-    <!-- Dialog reabrir instancia -->
-    <q-dialog v-model="dialogoReapertura">
-      <q-card class="pdv-dialog">
-        <div class="pdv-dialog-title" style="color: #2E7D32;">Reabrir instancia</div>
+    <!-- ── Dialog reabrir instancia ── -->
+    <q-dialog v-model="dialogoReapertura" :maximized="$q.screen.lt.sm">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : ''">
+        <div class="pdv-dialog-title" style="color: #065F46;">Reabrir instancia</div>
         <div class="pdv-dialog-body">
           <p style="margin: 0; font-size: 15px; color: #333333; line-height: 1.5;">
             ¿Estás seguro que deseas reabrir
@@ -156,7 +235,7 @@
           <q-btn
             unelevated label="Reabrir instancia" :loading="reabriendo"
             :disable="motivoReapertura.trim().length < 10"
-            style="background: #2E7D32; color: white; border-radius: 6px; padding: 0 24px; font-weight: 600;"
+            style="background: #065F46; color: white; border-radius: 8px; padding: 0 24px; font-weight: 600;"
             @click="confirmarReapertura"
           />
         </div>
@@ -218,10 +297,10 @@ const formVacio = () => ({
 })
 const form = ref(formVacio())
 
-function badgeEstado(status) {
-  if (status === 'active')    return 'background: #E8F5E9; color: #1B5E20; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
-  if (status === 'cancelled') return 'background: #FFEBEE; color: #7F0000; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
-  return 'background: #F5F5F5; color: #616161; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;'
+function pillEstado(status) {
+  if (status === 'active')    return 'pdv-pill-success'
+  if (status === 'cancelled') return 'pdv-pill-error'
+  return 'pdv-pill-neutral'
 }
 
 function labelEstado(status) {
