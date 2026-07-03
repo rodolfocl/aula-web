@@ -175,4 +175,5 @@
   font-size: 12px !important;
   padding: 5px 10px !important;
   box-shadow: 0 4px 12px rgba(0,0,0,0.35) !important;
+  white-space: nowrap !important;
 }

@@ -4,12 +4,13 @@
       <div style="color: #0D1B3E; font-size: 20px; font-weight: 700;">Gestión de Usuarios</div>
       <div style="position: relative; display: inline-flex;">
         <q-btn
-          unelevated icon="add" label="Nuevo usuario"
-          :style="isAdmin
-            ? 'background: #0D1B3E; color: white; border-radius: 8px;'
-            : 'background: #E2E8F0; color: #94A3B8; border-radius: 8px; pointer-events: none;'"
+          flat round
+          :style="isAdmin ? '' : 'pointer-events: none;'"
           @click="abrirDialogo()"
-        />
+        >
+          <i class="ti ti-user-plus" :style="isAdmin ? 'font-size: 22px; color: #0D1B3E;' : 'font-size: 22px; color: #94A3B8;'" />
+          <q-tooltip class="pdv-tooltip">Nuevo usuario</q-tooltip>
+        </q-btn>
         <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
           <q-tooltip class="pdv-tooltip">Solo los administradores pueden crear</q-tooltip>
         </div>
