@@ -12,6 +12,10 @@ api.interceptors.request.use((config) => {
   if (auth.token) {
     config.headers.Authorization = `Bearer ${auth.token}`
   }
+  const route = router.currentRoute.value.fullPath
+  if (route && route !== '/') {
+    config.headers['X-Client-Route'] = route
+  }
   return config
 })
 

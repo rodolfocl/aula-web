@@ -396,10 +396,15 @@ async function confirmarFinalizar() {
   }
 }
 
-async function cargarAlumnos(inst) {
+function generateBatchId() {
+  return Math.random().toString(36).slice(2, 9)
+}
+
+async function cargarAlumnos(inst, batchId = null) {
   inst.cargandoAlumnos = true
   try {
-    const { data } = await api.get(`/enrollments/instance/${inst.id}`)
+    const config = batchId ? { headers: { 'X-Batch-Id': batchId } } : {}
+    const { data } = await api.get(`/enrollments/instance/${inst.id}`, config)
     inst.alumnos = data.slice().sort((a, b) => (a.full_name ?? '').localeCompare(b.full_name ?? '', 'es'))
   } catch {
     inst.alumnos = []
@@ -411,11 +416,13 @@ async function cargarAlumnos(inst) {
 onMounted(async () => {
   cargando.value = true
   try {
+    const batchId = generateBatchId()
     const { data } = await api.get('/course-instances', {
       params: { teacher_id: auth.user.id },
+      headers: { 'X-Batch-Id': batchId },
     })
     instancias.value = data.map(i => ({ ...i, alumnos: null, cargandoAlumnos: false }))
-    await Promise.all(instancias.value.map(cargarAlumnos))
+    await Promise.all(instancias.value.map(inst => cargarAlumnos(inst, batchId)))
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudieron cargar los cursos.', position: 'top' })
   } finally {

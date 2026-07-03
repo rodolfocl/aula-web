@@ -243,21 +243,23 @@ async function cargarInstancias() {
   }
 }
 
-onMounted(async () => {
-  await cargarInstancias()
-  try {
-    const [{ data: c }, { data: u }] = await Promise.all([
-      api.get('/courses', { params: { includeInactive: false } }),
-      api.get('/users'),
-    ])
-    cursos.value = c
-    profesores.value = u
-  } catch {
-    $q.notify({ type: 'negative', message: 'No se pudo cargar los datos del formulario.', position: 'top' })
-  }
-})
+onMounted(cargarInstancias)
 
-function abrirDialogo(instancia = null) {
+async function abrirDialogo(instancia = null) {
+  if (cursos.value.length === 0 || profesores.value.length === 0) {
+    try {
+      const [{ data: c }, { data: u }] = await Promise.all([
+        api.get('/courses', { params: { includeInactive: false } }),
+        api.get('/users'),
+      ])
+      cursos.value = c
+      profesores.value = u
+    } catch {
+      $q.notify({ type: 'negative', message: 'No se pudo cargar los datos del formulario.', position: 'top' })
+      return
+    }
+  }
+
   editando.value = instancia
   form.value = instancia
     ? {
