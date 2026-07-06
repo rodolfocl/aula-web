@@ -3,21 +3,15 @@
 
     <!-- ── TOPBAR ──────────────────────────────────────────── -->
     <q-header style="background: #FFFFFF; box-shadow: var(--pdv-shadow-topbar); min-height: 64px;">
-      <q-toolbar style="min-height: 64px; padding: 0 16px 0 8px;">
+      <q-toolbar style="min-height: 64px; padding: 0 16px;">
 
-        <!-- Hamburger — solo en mobile -->
+        <!-- Hamburger — solo en mobile (en desktop está dentro del sidebar) -->
         <q-btn
           v-if="$q.screen.lt.md"
           flat round dense icon="menu"
           color="grey-7" class="q-mr-xs"
-          @click="drawer = !drawer"
+          @click="toggleHamburger"
         />
-
-        <!-- Logo -->
-        <q-toolbar-title shrink style="min-width: 0; padding: 0 12px 0 4px;">
-          <img :src="logoImg" alt="Aula PDV"
-            style="height: 46px; width: auto; object-fit: contain; display: block;" />
-        </q-toolbar-title>
 
         <q-space />
 
@@ -110,13 +104,65 @@
     <q-drawer
       v-model="drawer"
       show-if-above
-      :width="64"
+      :mini="miniState"
+      :mini-to-overlay="!sidebarPinned"
+      :width="220"
+      :mini-width="64"
       style="background: #0B1835;"
     >
-      <div class="column items-center" style="padding-top: 64px; height: 100%;">
-        <div class="sidebar-divider" style="margin-top: 12px; margin-bottom: 8px;" />
+      <div style="display: flex; flex-direction: column; height: 100%;">
 
-        <div class="column items-center" style="width: 64px; gap: 2px;">
+        <!-- Franja superior: logo + controles (misma altura que el topbar) -->
+        <div class="sidebar-brand" :class="{ 'sidebar-brand--mini': miniState }">
+
+          <!-- Expandido: logo completo crema -->
+          <img
+            v-show="!miniState"
+            :src="logoCremaImg"
+            alt="Aula Pan de Vida"
+            class="sidebar-brand-logo"
+          />
+
+          <!-- Mini: solo la espiga, clic = toggle rápido -->
+          <img
+            v-show="miniState"
+            :src="espigaImg"
+            alt="Aula Pan de Vida"
+            class="sidebar-brand-espiga"
+            @click="toggleHamburger"
+          />
+
+          <!-- Hamburguesa: desktop, visible cuando expandido y NO pinned -->
+          <q-btn
+            v-if="!$q.screen.lt.md"
+            v-show="!miniState && !sidebarPinned"
+            flat round dense icon="menu"
+            style="color: rgba(255,255,255,0.65);"
+            @click="toggleHamburger"
+          >
+            <q-tooltip class="pdv-tooltip" anchor="center right" self="center left" :offset="[12, 0]">
+              Mostrar/ocultar menú
+            </q-tooltip>
+          </q-btn>
+
+          <!-- Pin: desktop, visible cuando expandido -->
+          <q-btn
+            v-if="!$q.screen.lt.md"
+            v-show="!miniState"
+            flat round dense icon="push_pin"
+            :style="sidebarPinned ? 'color: #C9A96E;' : 'color: rgba(255,255,255,0.4);'"
+            @click="togglePin"
+          >
+            <q-tooltip class="pdv-tooltip" anchor="center right" self="center left" :offset="[12, 0]">
+              {{ sidebarPinned ? 'Desfijar menú' : 'Fijar menú expandido' }}
+            </q-tooltip>
+          </q-btn>
+
+        </div>
+
+        <div class="sidebar-divider" style="margin: 0 16px 8px;" />
+
+        <div class="column" style="width: 100%; gap: 2px; padding: 0 8px; flex: 1;">
 
           <template v-if="auth.hasRole('alumno')">
             <q-item
@@ -126,9 +172,14 @@
               :class="{ 'sidebar-item-active': isActive('AlumnoHistorial') }"
               @click="cerrarDrawerMobile"
             >
-              <i class="ti ti-history"
-                :style="`font-size: 22px; color: ${isActive('AlumnoHistorial') ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
-              <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
+              <q-item-section avatar class="sidebar-icon-col">
+                <i class="ti ti-history"
+                  :style="`font-size: 22px; color: ${isActive('AlumnoHistorial') ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
+              </q-item-section>
+              <q-item-section>
+                <span class="sidebar-label" :style="`color: ${isActive('AlumnoHistorial') ? '#FFFFFF' : 'rgba(255,255,255,0.75)'}`">Mi Historial</span>
+              </q-item-section>
+              <q-tooltip v-if="miniState" anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
                 Mi Historial
               </q-tooltip>
             </q-item>
@@ -144,9 +195,14 @@
               :class="{ 'sidebar-item-active': isProfesorActive }"
               @click="cerrarDrawerMobile"
             >
-              <i class="ti ti-chalkboard"
-                :style="`font-size: 22px; color: ${isProfesorActive ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
-              <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
+              <q-item-section avatar class="sidebar-icon-col">
+                <i class="ti ti-chalkboard"
+                  :style="`font-size: 22px; color: ${isProfesorActive ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
+              </q-item-section>
+              <q-item-section>
+                <span class="sidebar-label" :style="`color: ${isProfesorActive ? '#FFFFFF' : 'rgba(255,255,255,0.75)'}`">Mis Clases</span>
+              </q-item-section>
+              <q-tooltip v-if="miniState" anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
                 Mis Clases
               </q-tooltip>
             </q-item>
@@ -165,9 +221,14 @@
               :class="{ 'sidebar-item-active': isActive('AdminUsuarios') }"
               @click="cerrarDrawerMobile"
             >
-              <q-icon name="people" size="22px"
-                :style="{ color: isActive('AdminUsuarios') ? '#FFFFFF' : 'rgba(255,255,255,0.65)' }" />
-              <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
+              <q-item-section avatar class="sidebar-icon-col">
+                <q-icon name="people" size="22px"
+                  :style="{ color: isActive('AdminUsuarios') ? '#FFFFFF' : 'rgba(255,255,255,0.65)' }" />
+              </q-item-section>
+              <q-item-section>
+                <span class="sidebar-label" :style="`color: ${isActive('AdminUsuarios') ? '#FFFFFF' : 'rgba(255,255,255,0.75)'}`">Usuarios</span>
+              </q-item-section>
+              <q-tooltip v-if="miniState" anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
                 Usuarios
               </q-tooltip>
             </q-item>
@@ -179,9 +240,14 @@
               :class="{ 'sidebar-item-active': isActive('AdminCursos') }"
               @click="cerrarDrawerMobile"
             >
-              <i class="ti ti-template"
-                :style="`font-size: 22px; color: ${isActive('AdminCursos') ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
-              <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
+              <q-item-section avatar class="sidebar-icon-col">
+                <i class="ti ti-template"
+                  :style="`font-size: 22px; color: ${isActive('AdminCursos') ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
+              </q-item-section>
+              <q-item-section>
+                <span class="sidebar-label" :style="`color: ${isActive('AdminCursos') ? '#FFFFFF' : 'rgba(255,255,255,0.75)'}`">Plantilla de Cursos</span>
+              </q-item-section>
+              <q-tooltip v-if="miniState" anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
                 Plantilla de Cursos
               </q-tooltip>
             </q-item>
@@ -189,6 +255,7 @@
           </template>
 
         </div>
+
       </div>
     </q-drawer>
 
@@ -321,12 +388,24 @@ import { useQuasar } from 'quasar'
 import { useAuthStore } from '../stores/authStore'
 import api from '../services/api'
 import logoImg from '../assets/logo-principal-azul.png'
+import logoCremaImg from '../assets/logo-principal-crema.png'
+import espigaImg from '../assets/espiga.png'
 
 const router = useRouter()
 const route  = useRoute()
 const $q     = useQuasar()
 const auth   = useAuthStore()
-const drawer = ref(true)
+
+// Estado mobile del drawer (abierto/cerrado)
+const drawer = ref(false)
+
+// Pin: el usuario fijó el sidebar expandido de forma permanente (solo desktop)
+// Responsabilidad exclusiva del botón pin — guardado en localStorage
+const sidebarPinned = ref(JSON.parse(localStorage.getItem('pdv-sidebar-pinned') ?? 'false'))
+
+// Estado visual mini del drawer (:mini) — false = expandido, true = mini
+// Controlado solo por toggleHamburger (manual) y togglePin (permanente).
+const miniState = ref(!sidebarPinned.value)
 
 // ── Refs de UI ────────────────────────────────────────────
 const dialogoCambioPassword = ref(false)
@@ -369,6 +448,24 @@ function cerrarDrawerMobile() {
 function cerrarSesion() {
   auth.logout()
   router.push({ name: 'Login' })
+}
+
+// ── Sidebar: pin (fija/desfija el modo expandido permanentemente) ─────────
+function togglePin() {
+  sidebarPinned.value = !sidebarPinned.value
+  miniState.value = !sidebarPinned.value
+  localStorage.setItem('pdv-sidebar-pinned', JSON.stringify(sidebarPinned.value))
+}
+
+// ── Sidebar: hamburguesa ──────────────────────────────────────────────────
+// Desktop: toggle manual mini↔expandido (overlay temporal, no toca el pin).
+// Mobile: abre/cierra el drawer.
+function toggleHamburger() {
+  if ($q.screen.lt.md) {
+    drawer.value = !drawer.value
+  } else {
+    miniState.value = !miniState.value
+  }
 }
 
 // ── Subir foto ────────────────────────────────────────────
@@ -581,15 +678,57 @@ async function guardarPassword() {
   border-radius: 0;
 }
 
-/* ── Sidebar ── */
-.sidebar-item {
-  width: 48px;
-  min-height: 48px;
-  border-radius: 10px;
-  margin: 1px 8px;
+/* ── Sidebar: franja superior con logo + hamburguesa ── */
+.sidebar-brand {
+  height: 64px;
+  min-height: 64px;
   display: flex;
   align-items: center;
+  padding: 0 12px 0 16px;
+  flex-shrink: 0;
+  overflow: hidden;
+  gap: 8px;
+}
+
+.sidebar-brand-logo {
+  flex: 1;
+  height: 38px;
+  min-width: 0;
+  object-fit: contain;
+  object-position: left center;
+}
+
+/* Mini: espiga centrada */
+.sidebar-brand--mini {
   justify-content: center;
+  padding: 0;
+}
+
+.sidebar-brand-espiga {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  cursor: pointer;
+  opacity: 0.88;
+  transition: opacity 0.15s;
+}
+
+.sidebar-brand-espiga:hover {
+  opacity: 1;
+}
+
+/* ── Sidebar: íconos ── */
+.sidebar-icon-col {
+  min-width: 48px !important;
+  align-items: center !important;
+  padding-right: 0 !important;
+}
+
+/* ── Sidebar: ítems ── */
+.sidebar-item {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 10px;
   padding: 0;
   transition: background 0.2s;
   position: relative;
@@ -615,8 +754,17 @@ async function guardarPassword() {
   background: rgba(255, 255, 255, 0.07) !important;
 }
 
+/* ── Sidebar: etiquetas en modo expandido ── */
+.sidebar-label {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Sidebar: divisores ── */
 .sidebar-divider {
-  width: 32px;
   height: 1px;
   background: rgba(255, 255, 255, 0.1);
   margin: 6px 0;
