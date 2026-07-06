@@ -266,8 +266,8 @@ async function cargarTabla() {
   cargando.value = true
   try {
     const [{ data: inst }, { data: tabla }] = await Promise.all([
-      api.get(`/course-instances/${route.params.id}`),
-      api.get(`/course-instances/${route.params.id}/grades-table`),
+      api.get(`/courses/${route.params.id}`),
+      api.get(`/courses/${route.params.id}/grades-table`),
     ])
     instancia.value    = inst
     evaluaciones.value = tabla.evaluaciones
@@ -328,7 +328,7 @@ async function confirmarForm() {
   guardandoForm.value = true
   try {
     const { data: nueva } = await api.post(
-      `/course-instances/${route.params.id}/evaluations`,
+      `/courses/${route.params.id}/evaluations`,
       { name: form.value.name.trim(), date: form.value.date }
     )
     evaluaciones.value.push(nueva)

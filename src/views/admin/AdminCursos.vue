@@ -279,7 +279,13 @@
               outlined dense options-dense
               style="flex: 1;"
             />
-            <div style="flex: 1;" />
+            <q-input
+              v-model="formInstancia.schedule_time"
+              label="Hora"
+              type="time"
+              outlined dense
+              style="flex: 1;"
+            />
           </div>
 
           <AppDateField v-model="formInstancia.start_date" label="Fecha inicio" />
@@ -358,6 +364,7 @@ const formInstanciaVacio = () => ({
   year: new Date().getFullYear(),
   period: '',
   day_of_week: null,
+  schedule_time: '',
   start_date: '',
   end_date: '',
   max_absences: null,
@@ -373,7 +380,7 @@ async function cargarCursos() {
   cargando.value = true
   try {
     const params = mostrarInactivos.value ? { includeInactive: true } : {}
-    const { data } = await api.get('/courses', { params })
+    const { data } = await api.get('/course-templates', { params })
     cursos.value = data
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo cargar la lista de plantillas.', position: 'top' })
@@ -402,10 +409,10 @@ async function guardar() {
   guardando.value = true
   try {
     if (editando.value) {
-      await api.patch(`/courses/${editando.value.id}`, form.value)
+      await api.patch(`/course-templates/${editando.value.id}`, form.value)
       $q.notify({ type: 'positive', message: 'Plantilla actualizada.', position: 'top' })
     } else {
-      await api.post('/courses', form.value)
+      await api.post('/course-templates', form.value)
       $q.notify({ type: 'positive', message: 'Plantilla creada.', position: 'top' })
     }
     dialogo.value = false
@@ -424,7 +431,7 @@ function abrirDesactivar(curso) {
 
 async function activarCurso(curso) {
   try {
-    await api.patch(`/courses/${curso.id}`, { active: true })
+    await api.patch(`/course-templates/${curso.id}`, { active: true })
     $q.notify({ type: 'positive', message: 'Plantilla activada.', position: 'top' })
     await cargarCursos()
   } catch {
@@ -435,7 +442,7 @@ async function activarCurso(curso) {
 async function confirmarDesactivar() {
   desactivando.value = true
   try {
-    await api.patch(`/courses/${cursoADesactivar.value.id}`, { active: false })
+    await api.patch(`/course-templates/${cursoADesactivar.value.id}`, { active: false })
     dialogoDesactivar.value = false
     $q.notify({ type: 'positive', message: 'Plantilla desactivada.', position: 'top' })
     await cargarCursos()
@@ -480,12 +487,12 @@ async function guardarInstancia() {
   guardandoInstancia.value = true
   try {
     const payload = {
-      course_id: plantillaActual.value.id,
+      template_id: plantillaActual.value.id,
       ...formInstancia.value,
       start_date: formInstancia.value.start_date || null,
       end_date: formInstancia.value.end_date || null,
     }
-    await api.post('/course-instances', payload)
+    await api.post('/courses', payload)
     $q.notify({ type: 'positive', message: 'Curso creado.', position: 'top' })
     dialogoNuevoCurso.value = false
   } catch {

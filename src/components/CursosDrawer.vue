@@ -312,7 +312,7 @@ async function cargarInstancias() {
   if (!props.plantilla?.id) return
   cargando.value = true
   try {
-    const { data } = await api.get('/course-instances', {
+    const { data } = await api.get('/courses', {
       params: { course_id: props.plantilla.id },
     })
     instancias.value = data
@@ -366,7 +366,7 @@ async function abrirDialogo(inst) {
 async function guardar() {
   guardando.value = true
   try {
-    await api.patch(`/course-instances/${editando.value.id}`, form.value)
+    await api.patch(`/courses/${editando.value.id}`, form.value)
     $q.notify({ type: 'positive', message: 'Curso actualizado.', position: 'top' })
     dialogoEditar.value = false
     await cargarInstancias()
@@ -387,7 +387,7 @@ function abrirCierre(inst) {
 async function confirmarCierre() {
   cerrando.value = true
   try {
-    await api.patch(`/course-instances/${instanciaActual.value.id}`, {
+    await api.patch(`/courses/${instanciaActual.value.id}`, {
       status: 'finished',
       close_reason: motivoCierre.value.trim(),
     })
@@ -411,7 +411,7 @@ function abrirReapertura(inst) {
 async function confirmarReapertura() {
   reabriendo.value = true
   try {
-    await api.patch(`/course-instances/${instanciaActual.value.id}`, {
+    await api.patch(`/courses/${instanciaActual.value.id}`, {
       status: 'active',
       reopen_reason: motivoReapertura.value.trim(),
     })

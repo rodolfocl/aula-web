@@ -252,8 +252,8 @@ async function cargarTabla() {
   cargando.value = true
   try {
     const [{ data: inst }, { data: tabla }] = await Promise.all([
-      api.get(`/course-instances/${route.params.id}`),
-      api.get(`/course-instances/${route.params.id}/attendance-table`),
+      api.get(`/courses/${route.params.id}`),
+      api.get(`/courses/${route.params.id}/attendance-table`),
     ])
     instancia.value = inst
     sesiones.value  = tabla.sesiones

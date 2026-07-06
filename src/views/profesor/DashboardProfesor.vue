@@ -367,7 +367,7 @@ async function inscribirAlumno(alumno) {
   try {
     await api.post('/enrollments', {
       student_id: alumno.id,
-      instance_id: instanciaInscribir.value.id,
+      course_id: instanciaInscribir.value.id,
     })
     alumnosDisponibles.value = alumnosDisponibles.value.filter(a => a.id !== alumno.id)
     await cargarAlumnos(instanciaInscribir.value)
@@ -388,7 +388,7 @@ function abrirFinalizar(inst) {
 async function confirmarFinalizar() {
   finalizando.value = true
   try {
-    await api.patch(`/course-instances/${instanciaAFinalizar.value.id}`, {
+    await api.patch(`/courses/${instanciaAFinalizar.value.id}`, {
       status: 'finished',
       close_reason: motivoFinalizar.value.trim(),
     })
@@ -423,7 +423,7 @@ onMounted(async () => {
   cargando.value = true
   try {
     const batchId = generateBatchId()
-    const { data } = await api.get('/course-instances', {
+    const { data } = await api.get('/courses', {
       params: { teacher_id: auth.user.id },
       headers: { 'X-Batch-Id': batchId },
     })
