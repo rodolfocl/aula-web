@@ -1,0 +1,10 @@
+{
+  "name": "Aula Pan de Vida",
+  "short_name": "Aula PdV",
+  "theme_color": "#13224A",
+  "background_color": "#13224A",
+  "display": "standalone",
+  "icons": [
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
