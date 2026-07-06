@@ -42,19 +42,18 @@
                 <th class="th-sticky th-nombre">Estudiante</th>
 
                 <th v-for="ses in sesiones" :key="ses.id" class="th-sesion">
-                  <input
-                    v-if="editandoSesionId === ses.id"
-                    :ref="el => { if (el) fechaInputEl = el }"
-                    v-model="editandoFecha"
-                    type="date"
-                    class="fecha-edit-input"
-                    @blur="guardarFecha(ses)"
-                    @keydown.enter.prevent="guardarFecha(ses)"
-                    @keydown.esc="cancelarFecha"
-                  />
-                  <div v-else class="fecha-click" @click="iniciarEditarFecha(ses)">
+                  <div class="fecha-click">
                     <span>{{ formatFecha(ses.scheduled_at) }}</span>
                     <q-icon name="edit" size="11px" class="edit-hint" />
+                    <q-popup-proxy transition-show="scale" transition-hide="scale">
+                      <q-date
+                        :model-value="ses.scheduled_at?.slice(0, 10) || null"
+                        mask="YYYY-MM-DD"
+                        :first-day-of-week="1"
+                        :locale="localeES"
+                        @update:model-value="(val) => guardarFecha(ses, val)"
+                      />
+                    </q-popup-proxy>
                   </div>
                 </th>
 
@@ -139,7 +138,7 @@
       <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : ''">
         <div class="pdv-dialog-title">Nueva sesión</div>
         <div class="pdv-dialog-body">
-          <q-input v-model="formSesion.fecha" label="Fecha *" type="date" outlined dense autofocus />
+          <AppDateField v-model="formSesion.fecha" label="Fecha *" autofocus />
         </div>
         <div class="pdv-dialog-actions">
           <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
@@ -156,10 +155,11 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
+import AppDateField from '../../components/AppDateField.vue'
 
 const route = useRoute()
 const $q = useQuasar()
@@ -175,38 +175,25 @@ const dialogoSesion   = ref(false)
 const guardandoSesion = ref(false)
 const formSesion      = ref({ fecha: '' })
 
-// ── Edición inline de fecha de sesión ─────────────────────────────────────────
-const editandoSesionId = ref(null)
-const editandoFecha    = ref('')
-const fechaInputEl     = ref(null)
-
-function iniciarEditarFecha(ses) {
-  const d = ses.scheduled_at ? ses.scheduled_at.slice(0, 10) : ''
-  editandoSesionId.value = ses.id
-  editandoFecha.value = d
-  nextTick(() => {
-    if (fechaInputEl.value) fechaInputEl.value.focus()
-  })
+const localeES = {
+  days:        ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+  daysShort:   ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+  months:      ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+  monthsShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
 }
 
-async function guardarFecha(ses) {
-  if (editandoSesionId.value !== ses.id) return
-  const nueva = editandoFecha.value
-  editandoSesionId.value = null
-  if (!nueva || nueva === ses.scheduled_at?.slice(0, 10)) return
+// ── Edición de fecha de sesión (clic en header → calendario) ──────────────────
+async function guardarFecha(ses, nuevaFecha) {
+  if (!nuevaFecha || nuevaFecha === ses.scheduled_at?.slice(0, 10)) return
   try {
     await api.patch(`/sessions/${ses.id}`, {
-      scheduled_at: new Date(nueva + 'T12:00:00Z').toISOString(),
+      scheduled_at: new Date(nuevaFecha + 'T12:00:00Z').toISOString(),
     })
-    ses.scheduled_at = new Date(nueva + 'T12:00:00Z').toISOString()
+    ses.scheduled_at = new Date(nuevaFecha + 'T12:00:00Z').toISOString()
     $q.notify({ type: 'positive', message: 'Fecha actualizada.', position: 'top' })
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo actualizar la fecha.', position: 'top' })
   }
-}
-
-function cancelarFecha() {
-  editandoSesionId.value = null
 }
 
 // ── Ciclo de estados ──────────────────────────────────────────────────────────
@@ -444,7 +431,7 @@ tbody .th-sticky { background: white; }
   justify-content: center;
 }
 
-/* ── Edición inline de fecha ── */
+/* ── Edición de fecha de sesión (via calendario popup) ── */
 .fecha-click {
   display: inline-flex;
   align-items: center;
@@ -463,24 +450,6 @@ tbody .th-sticky { background: white; }
 }
 .fecha-click:hover .edit-hint {
   opacity: 0.7;
-}
-.fecha-edit-input {
-  width: 120px;
-  padding: 2px 4px;
-  font-size: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  outline: none;
-  text-align: center;
-}
-.fecha-edit-input:focus {
-  border-color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.25);
-}
-.fecha-edit-input::-webkit-calendar-picker-indicator {
-  filter: invert(1);
 }
 
 /* ── Mobile: tabla con scroll horizontal, celdas compactas ── */

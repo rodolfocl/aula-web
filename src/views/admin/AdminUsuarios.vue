@@ -95,6 +95,7 @@
                   @click="abrirDialogo(props.row)"
                 >
                   <q-icon name="edit" size="16px" />
+                  <q-tooltip v-if="isAdmin" class="pdv-tooltip">Editar usuario</q-tooltip>
                 </button>
                 <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
                   <q-tooltip class="pdv-tooltip">Solo los administradores pueden editar</q-tooltip>
@@ -127,6 +128,7 @@
                     @click="pedirDesactivar(props.row)"
                   >
                     <q-icon name="person_off" size="16px" />
+                    <q-tooltip v-if="isAdmin" class="pdv-tooltip">Desactivar usuario</q-tooltip>
                   </button>
                   <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
                     <q-tooltip class="pdv-tooltip">Solo los administradores pueden desactivar</q-tooltip>
@@ -170,6 +172,7 @@
                     <div style="position: relative; display: inline-flex;">
                       <button class="pdv-action-btn pdv-action-blue" :class="{ 'pdv-action-disabled': !isAdmin }" @click="abrirDialogo(props.row)">
                         <q-icon name="edit" size="16px" />
+                        <q-tooltip v-if="isAdmin" class="pdv-tooltip">Editar usuario</q-tooltip>
                       </button>
                       <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
                         <q-tooltip class="pdv-tooltip">Solo los administradores pueden editar</q-tooltip>
@@ -179,6 +182,7 @@
                       <div style="position: relative; display: inline-flex;">
                         <button class="pdv-action-btn pdv-action-success" :class="{ 'pdv-action-disabled': !isAdmin }" @click="reactivar(props.row)">
                           <q-icon name="person_add" size="16px" />
+                          <q-tooltip v-if="isAdmin" class="pdv-tooltip">Reactivar usuario</q-tooltip>
                         </button>
                         <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
                           <q-tooltip class="pdv-tooltip">Solo los administradores pueden reactivar</q-tooltip>
@@ -189,6 +193,7 @@
                       <div style="position: relative; display: inline-flex;">
                         <button class="pdv-action-btn pdv-action-danger" :class="{ 'pdv-action-disabled': !isAdmin }" @click="pedirDesactivar(props.row)">
                           <q-icon name="person_off" size="16px" />
+                          <q-tooltip v-if="isAdmin" class="pdv-tooltip">Desactivar usuario</q-tooltip>
                         </button>
                         <div v-if="!isAdmin" style="position: absolute; inset: 0; cursor: not-allowed;">
                           <q-tooltip class="pdv-tooltip">Solo los administradores pueden desactivar</q-tooltip>

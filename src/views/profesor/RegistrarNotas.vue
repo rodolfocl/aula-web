@@ -119,7 +119,7 @@
         <div class="pdv-dialog-title">Nueva evaluación</div>
         <div class="pdv-dialog-body">
           <q-input v-model="form.name" label="Nombre *" placeholder="Ej: Examen 1, Trabajo grupal…" outlined dense autofocus />
-          <q-input v-model="form.date" label="Fecha *" type="date" outlined dense />
+          <AppDateField v-model="form.date" label="Fecha *" />
         </div>
         <div class="pdv-dialog-actions">
           <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
@@ -140,6 +140,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
+import AppDateField from '../../components/AppDateField.vue'
 
 const route = useRoute()
 const $q = useQuasar()

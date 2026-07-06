@@ -183,26 +183,13 @@
               :class="{ 'sidebar-item-active': isActive('AdminCursos') }"
               @click="cerrarDrawerMobile"
             >
-              <q-icon name="menu_book" size="22px"
-                :style="{ color: isActive('AdminCursos') ? '#FFFFFF' : 'rgba(255,255,255,0.65)' }" />
+              <i class="ti ti-template"
+                :style="`font-size: 22px; color: ${isActive('AdminCursos') ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
               <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
-                Cursos
+                Plantilla de Cursos
               </q-tooltip>
             </q-item>
 
-            <q-item
-              clickable v-ripple
-              :to="{ name: 'AdminInstancias' }"
-              class="sidebar-item"
-              :class="{ 'sidebar-item-active': isActive('AdminInstancias') }"
-              @click="cerrarDrawerMobile"
-            >
-              <q-icon name="calendar_month" size="22px"
-                :style="{ color: isActive('AdminInstancias') ? '#FFFFFF' : 'rgba(255,255,255,0.65)' }" />
-              <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
-                Instancias
-              </q-tooltip>
-            </q-item>
           </template>
 
         </div>
@@ -337,7 +324,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from '../stores/authStore'
 import api from '../services/api'
-import logoImg from '../assets/logo-aula-pdv.png'
+import logoImg from '../assets/logo-principal-azul.png'
 
 const router = useRouter()
 const route  = useRoute()
