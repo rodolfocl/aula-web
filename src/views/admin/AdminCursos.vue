@@ -495,6 +495,7 @@ async function guardarInstancia() {
     await api.post('/courses', payload)
     $q.notify({ type: 'positive', message: 'Curso creado.', position: 'top' })
     dialogoNuevoCurso.value = false
+    await cargarCursos()
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo crear el curso.', position: 'top' })
   } finally {
