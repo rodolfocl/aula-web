@@ -112,8 +112,8 @@
                     class="course-meta-row course-meta-link"
                     @click="abrirDrawer(curso, 'anteriores')"
                   >
-                    <q-icon name="history_edu" size="14px" style="color: #94A3B8; flex-shrink: 0;" />
-                    <span>
+                    <q-icon name="history_edu" size="14px" :style="curso.past_instances_count > 0 ? 'color: #1D68C8; flex-shrink: 0;' : 'color: #94A3B8; flex-shrink: 0;'" />
+                    <span :style="curso.past_instances_count > 0 ? 'color: #1D68C8;' : ''">
                       {{ curso.past_instances_count > 0
                           ? `${curso.past_instances_count} curso${curso.past_instances_count > 1 ? 's' : ''} dictado${curso.past_instances_count > 1 ? 's' : ''} anteriormente`
                           : 'Sin cursos anteriores' }}

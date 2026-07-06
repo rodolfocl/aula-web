@@ -70,7 +70,10 @@
                     <div style="flex: 1; min-width: 0;">
                       <div style="font-weight: 600; font-size: 13.5px; color: #0D1B3E; margin-bottom: 3px;">{{ inst.teacher_name }}</div>
                       <div style="font-size: 12.5px; color: #64748B; margin-bottom: 2px;">
-                        {{ inst.year }} · {{ inst.period }}<template v-if="inst.day_of_week"> · {{ inst.day_of_week }}</template>
+                        {{ inst.year }}<template v-if="inst.period"> · {{ inst.period }}</template>
+                      </div>
+                      <div v-if="inst.day_of_week || inst.schedule_time" style="font-size: 12px; color: #64748B; margin-bottom: 2px;">
+                        {{ [inst.day_of_week, inst.schedule_time?.slice(0,5)].filter(Boolean).join(' · ') }}
                       </div>
                       <div v-if="inst.start_date" style="font-size: 12px; color: #94A3B8;">
                         {{ inst.start_date?.slice(0,10) }} → {{ inst.end_date?.slice(0,10) ?? '—' }}
@@ -105,7 +108,10 @@
                     <div style="flex: 1; min-width: 0;">
                       <div style="font-weight: 600; font-size: 13.5px; color: #0D1B3E; margin-bottom: 3px;">{{ inst.teacher_name }}</div>
                       <div style="font-size: 12.5px; color: #64748B; margin-bottom: 2px;">
-                        {{ inst.year }} · {{ inst.period }}<template v-if="inst.day_of_week"> · {{ inst.day_of_week }}</template>
+                        {{ inst.year }}<template v-if="inst.period"> · {{ inst.period }}</template>
+                      </div>
+                      <div v-if="inst.day_of_week || inst.schedule_time" style="font-size: 12px; color: #64748B; margin-bottom: 2px;">
+                        {{ [inst.day_of_week, inst.schedule_time?.slice(0,5)].filter(Boolean).join(' · ') }}
                       </div>
                       <div v-if="inst.start_date" style="font-size: 12px; color: #94A3B8;">
                         {{ inst.start_date?.slice(0,10) }} → {{ inst.end_date?.slice(0,10) ?? '—' }}
@@ -151,7 +157,7 @@
         </div>
         <div class="row q-gutter-md">
           <q-select v-model="form.day_of_week" label="Día" :options="DIAS" clearable outlined dense options-dense style="flex: 1;" />
-          <div style="flex: 1;" />
+          <q-input v-model="form.schedule_time" label="Hora" type="time" outlined dense style="flex: 1;" />
         </div>
         <AppDateField v-model="form.start_date" label="Fecha inicio" />
         <AppDateField v-model="form.end_date" label="Fecha fin" />
@@ -294,7 +300,7 @@ const anteriores = computed(() => instancias.value.filter(i => i.status !== 'act
 
 const formVacio = () => ({
   teacher_id: null, year: new Date().getFullYear(),
-  period: '', day_of_week: null, start_date: '', end_date: '', max_absences: null,
+  period: '', day_of_week: null, schedule_time: '', start_date: '', end_date: '', max_absences: null,
 })
 const form = ref(formVacio())
 
@@ -352,13 +358,14 @@ async function abrirDialogo(inst) {
   }
   editando.value = inst
   form.value = {
-    teacher_id:   inst.teacher_id,
-    year:         inst.year,
-    period:       inst.period,
-    day_of_week:  inst.day_of_week ?? null,
-    start_date:   inst.start_date?.slice(0, 10) ?? '',
-    end_date:     inst.end_date?.slice(0, 10) ?? '',
-    max_absences: inst.max_absences ?? null,
+    teacher_id:    inst.teacher_id,
+    year:          inst.year,
+    period:        inst.period,
+    day_of_week:   inst.day_of_week ?? null,
+    schedule_time: inst.schedule_time?.slice(0, 5) ?? '',
+    start_date:    inst.start_date?.slice(0, 10) ?? '',
+    end_date:      inst.end_date?.slice(0, 10) ?? '',
+    max_absences:  inst.max_absences ?? null,
   }
   dialogoEditar.value = true
 }
