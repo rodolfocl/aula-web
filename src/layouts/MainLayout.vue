@@ -46,10 +46,6 @@
             >
               <!-- Header del menú (no clickeable) -->
               <div class="user-menu-header">
-                <div class="pdv-avatar pdv-avatar-lg topbar-avatar" style="background: #0D1B3E;">
-                  <img v-if="auth.user?.avatar" :src="auth.user.avatar" class="avatar-img" />
-                  <template v-else>{{ iniciales(auth.user?.full_name ?? auth.user?.nombre ?? '?') }}</template>
-                </div>
                 <div style="min-width: 0;">
                   <div style="font-weight: 600; font-size: 14px; color: #0D1B3E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                     {{ auth.user?.full_name ?? auth.user?.nombre }}
