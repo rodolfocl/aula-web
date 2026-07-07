@@ -44,11 +44,21 @@
               class="user-menu"
               style="min-width: 240px; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); border: 1px solid #F1F5F9;"
             >
-              <!-- Header del menú (no clickeable) -->
+              <!-- Header del menú -->
               <div class="user-menu-header">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: 14px; color: #0D1B3E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    {{ auth.user?.full_name ?? auth.user?.nombre }}
+                <div style="min-width: 0; flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <span style="font-weight: 600; font-size: 14px; color: #0D1B3E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      {{ auth.user?.full_name ?? auth.user?.nombre }}
+                    </span>
+                    <q-btn
+                      flat round dense size="xs"
+                      style="color: #94A3B8; width: 22px; height: 22px; flex-shrink: 0;"
+                      @click.stop="abrirEditarNombre"
+                    >
+                      <i class="ti ti-pencil" style="font-size: 13px;" />
+                      <q-tooltip class="pdv-tooltip" anchor="bottom middle" self="top middle">Editar nombre</q-tooltip>
+                    </q-btn>
                   </div>
                   <div style="font-size: 12px; color: #64748B; text-transform: capitalize; margin-top: 2px;">
                     {{ esAdmin ? 'Administrador' : (auth.userRoles.join(' · ') || '—') }}
@@ -263,6 +273,35 @@
       </q-card>
     </q-dialog>
 
+    <!-- ── DIÁLOGO: Editar nombre ────────────────────────────── -->
+    <q-dialog v-model="dialogoEditarNombre" :maximized="$q.screen.lt.sm" @hide="resetEditarNombre">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : 'min-width: 380px;'">
+        <div class="pdv-dialog-title">Editar nombre</div>
+        <div class="pdv-dialog-body">
+          <q-input
+            v-model="formNombre"
+            label="Nombre completo"
+            outlined dense
+            autofocus
+            maxlength="100"
+            :error="!!errorNombre"
+            :error-message="errorNombre"
+            :disable="guardandoNombre"
+            @keyup.enter="guardarNombre"
+            @keyup.esc="dialogoEditarNombre = false"
+          />
+        </div>
+        <div class="pdv-dialog-actions">
+          <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" :disable="guardandoNombre" />
+          <q-btn
+            unelevated label="Guardar" class="pdv-btn-save"
+            :loading="guardandoNombre"
+            @click="guardarNombre"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
+
     <!-- ── DIÁLOGO: Subir foto ──────────────────────────────── -->
     <q-dialog v-model="dialogoSubirFoto" :maximized="$q.screen.lt.sm" @hide="resetSubirFoto">
       <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : 'min-width: 380px;'">
@@ -330,6 +369,10 @@ const drawer = ref(true)
 
 // ── Refs de UI ────────────────────────────────────────────
 const dialogoCambioPassword = ref(false)
+const dialogoEditarNombre   = ref(false)
+const formNombre            = ref('')
+const errorNombre           = ref('')
+const guardandoNombre       = ref(false)
 const dialogoSubirFoto      = ref(false)
 const fotoPreview           = ref(null)
 const errorFoto             = ref('')
@@ -369,6 +412,46 @@ function cerrarDrawerMobile() {
 function cerrarSesion() {
   auth.logout()
   router.push({ name: 'Login' })
+}
+
+// ── Editar nombre ─────────────────────────────────────────
+function abrirEditarNombre() {
+  formNombre.value = auth.user?.full_name ?? auth.user?.nombre ?? ''
+  errorNombre.value = ''
+  dialogoEditarNombre.value = true
+}
+
+function resetEditarNombre() {
+  formNombre.value = ''
+  errorNombre.value = ''
+  guardandoNombre.value = false
+}
+
+async function guardarNombre() {
+  errorNombre.value = ''
+  const nombre = formNombre.value.trim()
+
+  if (!nombre) {
+    errorNombre.value = 'El nombre no puede estar vacío.'
+    return
+  }
+  if (nombre.length > 100) {
+    errorNombre.value = 'El nombre no puede superar los 100 caracteres.'
+    return
+  }
+
+  guardandoNombre.value = true
+  try {
+    const { data } = await api.patch('/users/me', { full_name: nombre })
+    auth.updateUser({ full_name: data.full_name })
+    $q.notify({ type: 'positive', message: 'Nombre actualizado correctamente.', position: 'top' })
+    dialogoEditarNombre.value = false
+  } catch (err) {
+    const msg = err.response?.data?.message
+    errorNombre.value = msg || 'No se pudo guardar el nombre. Intenta nuevamente.'
+  } finally {
+    guardandoNombre.value = false
+  }
 }
 
 // ── Subir foto ────────────────────────────────────────────
