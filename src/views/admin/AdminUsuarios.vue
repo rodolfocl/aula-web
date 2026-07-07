@@ -17,9 +17,9 @@
       </div>
     </div>
 
-    <q-card class="pdv-table" style="background: white; border-radius: 14px; box-shadow: var(--pdv-shadow-card);">
+    <q-card class="pdv-table usuarios-tabla" style="background: white; border-radius: 14px; box-shadow: var(--pdv-shadow-card);">
       <q-table
-        :rows="usuarios"
+        :rows="usuariosFiltrados"
         :columns="columnas"
         row-key="id"
         flat
@@ -28,14 +28,46 @@
         :pagination="{ rowsPerPage: 15 }"
         :rows-per-page-options="[5, 10, 15, 25, 50, 0]"
         :grid="$q.screen.lt.sm"
+        @row-click="(evt, row) => abrirDrawer(row)"
       >
         <template #top-left>
-          <q-toggle
-            v-model="mostrarInactivos"
-            label="Mostrar inactivos"
-            color="primary"
-            style="font-size: 13px; color: #64748B;"
-          />
+          <div class="row items-center" style="gap: 14px; flex-wrap: wrap;">
+            <q-toggle
+              v-model="mostrarInactivos"
+              label="Mostrar inactivos"
+              color="primary"
+              style="font-size: 13px; color: #64748B;"
+            />
+
+            <button class="rol-filter-btn">
+              <span class="rol-filter-label">Rol:</span>
+              <span class="rol-filter-value">{{ roleFilter }}</span>
+              <q-icon name="keyboard_arrow_down" size="16px" style="color: #9AA0AB; margin-left: 2px;" />
+              <q-menu
+                auto-close
+                anchor="bottom left"
+                self="top left"
+                :offset="[0, 4]"
+                style="border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.10); min-width: 150px;"
+              >
+                <q-list style="padding: 4px 0;">
+                  <q-item
+                    v-for="op in opcionesRol"
+                    :key="op"
+                    clickable
+                    class="rol-filter-item"
+                    :class="{ 'rol-filter-item-active': roleFilter === op }"
+                    @click="roleFilter = op"
+                  >
+                    <q-item-section style="font-size: 13px; color: #13224A;">{{ op }}</q-item-section>
+                    <q-item-section v-if="roleFilter === op" side>
+                      <q-icon name="check" size="14px" style="color: #13224A;" />
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
+            </button>
+          </div>
         </template>
 
         <template #top-right>
@@ -84,7 +116,7 @@
 
         <!-- ── Columna acciones ── -->
         <template #body-cell-acciones="props">
-          <q-td :props="props">
+          <q-td :props="props" @click.stop>
             <div class="row items-center no-wrap" style="gap: 6px; justify-content: center;">
 
               <!-- Editar -->
@@ -142,7 +174,7 @@
 
         <!-- ── Vista móvil (grid mode) ── -->
         <template #item="props">
-          <div class="col-12 q-pa-xs">
+          <div class="col-12 q-pa-xs" style="cursor: pointer;" @click="abrirDrawer(props.row)">
             <q-card style="border-radius: 12px; box-shadow: var(--pdv-shadow-card); background: white;">
               <q-card-section style="padding: 14px 16px;">
 
@@ -168,7 +200,7 @@
                       style="text-transform: capitalize;"
                     >{{ rol }}</span>
                   </div>
-                  <div class="row items-center no-wrap" style="gap: 6px;">
+                  <div class="row items-center no-wrap" style="gap: 6px;" @click.stop>
                     <div style="position: relative; display: inline-flex;">
                       <button class="pdv-action-btn pdv-action-blue" :class="{ 'pdv-action-disabled': !isAdmin }" @click="abrirDialogo(props.row)">
                         <q-icon name="edit" size="16px" />
@@ -273,16 +305,24 @@
         </div>
       </q-card>
     </q-dialog>
+
+    <!-- ── Drawer: historial de alumno ── -->
+    <StudentDrawer
+      v-model="drawerAbierto"
+      :usuario="selectedUser"
+      @edit="editarDesdeDrawer"
+    />
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import { usePermissions } from '../../composables/usePermissions'
 import EmptyState from '../../components/EmptyState.vue'
+import StudentDrawer from '../../components/StudentDrawer.vue'
 
 const $q = useQuasar()
 const auth = useAuthStore()
@@ -290,6 +330,8 @@ const { isAdmin } = usePermissions()
 
 const filtro = ref('')
 const mostrarInactivos = ref(false)
+const roleFilter = ref('Todos')
+const opcionesRol = ['Todos', 'Alumno', 'Profesor', 'Administrador']
 const dialogo = ref(false)
 const editando = ref(null)
 const cargando = ref(false)
@@ -297,6 +339,8 @@ const guardando = ref(false)
 const dialogoDesactivar = ref(false)
 const usuarioADesactivar = ref(null)
 const procesando = ref(false)
+const selectedUser = ref(null)
+const drawerAbierto = ref(false)
 
 const opcionesRoles = [
   { label: 'Alumno', value: 'alumno' },
@@ -315,8 +359,25 @@ const columnas = [
 const usuarios = ref([])
 const form = ref({ full_name: '', email: '', password: '', roles: [] })
 
+const usuariosFiltrados = computed(() => {
+  if (roleFilter.value === 'Todos') return usuarios.value
+  return usuarios.value.filter(u =>
+    (u.roles ?? []).includes(roleFilter.value.toLowerCase())
+  )
+})
+
 function iniciales(nombre) {
   return (nombre ?? '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+}
+
+function abrirDrawer(usuario) {
+  selectedUser.value = usuario
+  drawerAbierto.value = true
+}
+
+function editarDesdeDrawer(usuario) {
+  drawerAbierto.value = false
+  abrirDialogo(usuario)
 }
 
 async function cargarUsuarios() {
@@ -413,3 +474,36 @@ async function reactivar(usuario) {
   }
 }
 </script>
+
+<style>
+/* Sin scoped: penetra en los internos de q-table */
+.usuarios-tabla .q-table tbody tr { cursor: pointer; }
+
+.rol-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid #DFE3E8;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  color: #13224A;
+  transition: border-color 0.15s;
+  user-select: none;
+}
+.rol-filter-btn:hover { border-color: #B0B8C4; }
+
+.rol-filter-label { color: #9AA0AB; margin-right: 1px; }
+
+.rol-filter-item {
+  min-height: 36px !important;
+  border-radius: 5px;
+  margin: 1px 4px;
+  padding: 0 10px !important;
+}
+.rol-filter-item:hover { background: #F4F6F9 !important; }
+.rol-filter-item-active { background: #F4F6F9 !important; }
+</style>

@@ -145,24 +145,6 @@
 
           <div class="sidebar-divider" />
 
-          <template v-if="auth.hasRole('alumno')">
-            <q-item
-              clickable v-ripple
-              :to="{ name: 'AlumnoHistorial' }"
-              class="sidebar-item"
-              :class="{ 'sidebar-item-active': isActive('AlumnoHistorial') }"
-              @click="cerrarDrawerMobile"
-            >
-              <i class="ti ti-history"
-                :style="`font-size: 22px; color: ${isActive('AlumnoHistorial') ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
-              <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
-                Mi Historial
-              </q-tooltip>
-            </q-item>
-          </template>
-
-          <div class="sidebar-divider" />
-
           <template v-if="auth.hasRole('profesor')">
             <q-item
               clickable v-ripple
@@ -178,11 +160,6 @@
               </q-tooltip>
             </q-item>
           </template>
-
-          <div
-            v-if="(auth.hasRole('administrador') || auth.hasRole('profesor')) && auth.hasRole('alumno')"
-            class="sidebar-divider"
-          />
 
           <template v-if="auth.hasRole('administrador') || auth.hasRole('profesor')">
             <q-item
