@@ -1,84 +1,149 @@
 <template>
-  <div class="flex flex-center" style="min-height: 100vh; background: #F0F2F5;">
-    <q-card class="q-pa-lg" style="min-width: 360px; max-width: 420px; width: 100%; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.10);">
-      <q-card-section class="text-center q-pb-sm">
-        <q-icon name="school" size="3rem" style="color: #0D1B3E;" />
-        <div class="text-h5 text-weight-bold q-mt-sm" style="color: #0D1B3E;">Aula PDV</div>
-        <div class="text-caption text-grey-6">Ministerio Pan de Vida</div>
-      </q-card-section>
+  <div class="auth-bg flex flex-center" style="min-height: 100vh; padding: 16px;">
 
-      <q-card-section v-if="mensajeExito" class="q-pt-none q-pb-none">
-        <q-banner class="bg-positive text-white rounded-borders" dense>
+    <!-- ── DESKTOP: card de dos columnas ── -->
+    <div v-if="!$q.screen.lt.md" class="auth-card-desktop">
+
+      <!-- Panel izquierdo navy -->
+      <div class="auth-left-panel">
+        <img :src="logoCrema" alt="Aula Pan de Vida" class="auth-logo" />
+        <div class="auth-left-text">
+          Bienvenido de nuevo.<br />
+          Toma asistencia, califica y conéctate a tu clase.
+        </div>
+      </div>
+
+      <!-- Panel derecho: formulario -->
+      <div class="auth-right-panel">
+        <div class="auth-title">Iniciar sesión</div>
+        <div class="auth-subtitle">Ingresa tus datos para entrar al aula.</div>
+
+        <q-banner v-if="mensajeExito" dense class="q-mb-md auth-banner-ok">
           {{ mensajeExito }}
         </q-banner>
-      </q-card-section>
 
-      <q-card-section>
-        <q-form ref="formRef" @submit.prevent="iniciarSesion" class="q-gutter-lg">
+        <q-form ref="formRef" @submit.prevent="iniciarSesion" class="auth-form">
+          <div class="auth-field">
+            <div class="auth-label">Correo</div>
+            <q-input
+              v-model="form.email"
+              type="email"
+              placeholder="tucorreo@iglesia.cl"
+              outlined dense
+              class="auth-input"
+              autocomplete="email"
+              :rules="[val => !!val || 'El correo es requerido']"
+            />
+          </div>
+
+          <div class="auth-field">
+            <div class="auth-label">Contraseña</div>
+            <q-input
+              v-model="form.password"
+              :type="mostrarPassword ? 'text' : 'password'"
+              placeholder="••••••••"
+              outlined dense
+              class="auth-input"
+              autocomplete="current-password"
+              :rules="[val => !!val || 'La contraseña es requerida']"
+            >
+              <template #append>
+                <q-icon
+                  :name="mostrarPassword ? 'visibility_off' : 'visibility'"
+                  class="cursor-pointer"
+                  style="color: #94A3B8; font-size: 18px;"
+                  @click="mostrarPassword = !mostrarPassword"
+                />
+              </template>
+            </q-input>
+          </div>
+
+          <div class="text-right" style="margin-top: -4px;">
+            <router-link :to="{ name: 'ForgotPassword' }" class="auth-link">
+              ¿Olvidaste tu contraseña?
+            </router-link>
+          </div>
+
+          <q-banner v-if="error" dense class="auth-banner-error">{{ error }}</q-banner>
+
+          <q-btn type="submit" label="Entrar" unelevated class="full-width auth-btn" :loading="cargando" />
+        </q-form>
+
+        <div class="auth-footer">
+          <span>¿No tienes cuenta?</span>
+          <router-link :to="{ name: 'Register' }" class="auth-link q-ml-xs">Regístrate</router-link>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MOBILE: layout vertical navy ── -->
+    <div v-else class="auth-mobile-wrapper">
+      <div class="auth-mobile-header">
+        <img :src="espiga" alt="" class="auth-mobile-espiga" />
+        <img :src="nombreCrema" alt="Aula Pan de vida" class="auth-mobile-nombre" />
+      </div>
+
+      <div class="auth-mobile-card">
+        <q-banner v-if="mensajeExito" dense class="q-mb-sm auth-banner-ok" style="font-size: 13px;">
+          {{ mensajeExito }}
+        </q-banner>
+
+        <q-form ref="formRef" @submit.prevent="iniciarSesion" class="auth-form">
           <q-input
             v-model="form.email"
-            label="Correo electrónico"
             type="email"
-            :rules="[val => !!val || 'El correo es requerido']"
+            label="Correo"
+            outlined dense
+            class="auth-input-mobile"
             autocomplete="email"
-          >
-            <template #prepend><q-icon name="email" style="color: #8B7355;" /></template>
-          </q-input>
-
+            :rules="[val => !!val || 'El correo es requerido']"
+          />
           <q-input
             v-model="form.password"
-            label="Contraseña"
             :type="mostrarPassword ? 'text' : 'password'"
-            :rules="[val => !!val || 'La contraseña es requerida']"
+            label="Contraseña"
+            outlined dense
+            class="auth-input-mobile"
             autocomplete="current-password"
+            :rules="[val => !!val || 'La contraseña es requerida']"
           >
-            <template #prepend><q-icon name="lock" style="color: #8B7355;" /></template>
             <template #append>
               <q-icon
                 :name="mostrarPassword ? 'visibility_off' : 'visibility'"
                 class="cursor-pointer"
-                style="color: #8B7355;"
+                style="color: #94A3B8; font-size: 18px;"
                 @click="mostrarPassword = !mostrarPassword"
               />
             </template>
           </q-input>
 
-          <div class="text-right">
-            <router-link :to="{ name: 'ForgotPassword' }" class="text-caption" style="color: #0D1B3E;">
-              ¿Olvidaste tu contraseña?
-            </router-link>
-          </div>
+          <q-banner v-if="error" dense class="auth-banner-error" style="font-size: 13px;">{{ error }}</q-banner>
 
-          <q-banner v-if="error" class="bg-negative text-white rounded-borders" dense>
-            {{ error }}
-          </q-banner>
-
-          <q-btn
-            type="submit"
-            label="Ingresar"
-            class="full-width pdv-btn-save"
-            :loading="cargando"
-            unelevated
-          />
+          <q-btn type="submit" label="Entrar" unelevated class="full-width auth-btn" :loading="cargando" />
         </q-form>
-      </q-card-section>
 
-      <q-card-section class="text-center q-pt-none">
-        <span class="text-caption text-grey-6">¿No tienes cuenta?</span>
-        <router-link :to="{ name: 'Register' }" class="text-caption q-ml-xs" style="color: #0D1B3E;">
-          Regístrate
-        </router-link>
-      </q-card-section>
-    </q-card>
+        <div class="text-center" style="margin-top: 12px;">
+          <router-link :to="{ name: 'ForgotPassword' }" class="auth-link" style="font-size: 13px;">
+            ¿Olvidaste tu contraseña?
+          </router-link>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { useAuthStore } from '../stores/authStore'
 import authService from '../services/auth'
+import logoCrema from '../assets/logo-principal-crema.png'
+import espiga from '../assets/espiga.png'
+import nombreCrema from '../assets/nombre-crema.png'
 
+const $q = useQuasar()
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
@@ -124,3 +189,213 @@ async function iniciarSesion() {
   }
 }
 </script>
+
+<style scoped>
+/* ── Fondo de página ── */
+.auth-bg {
+  background: #EDE9E0;
+}
+
+/* ── Card desktop (dos columnas) ── */
+.auth-card-desktop {
+  display: flex;
+  width: 100%;
+  max-width: 840px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.14);
+}
+
+/* ── Panel izquierdo navy ── */
+.auth-left-panel {
+  width: 42%;
+  flex-shrink: 0;
+  background: #0B1835;
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 520px;
+}
+
+.auth-logo {
+  height: 70px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.auth-left-text {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* ── Panel derecho blanco ── */
+.auth-right-panel {
+  flex: 1;
+  background: white;
+  padding: 48px 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.auth-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0D1B3E;
+  margin-bottom: 6px;
+}
+
+.auth-subtitle {
+  font-size: 14px;
+  color: #64748B;
+  margin-bottom: 28px;
+}
+
+/* ── Formulario ── */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: 0.01em;
+}
+
+/* ── Input desktop: fondo crema ── */
+.auth-input :deep(.q-field__control) {
+  background: #FAF8F3;
+  border-radius: 8px !important;
+}
+.auth-input :deep(.q-field__control::before) {
+  border-color: #DDD5C8 !important;
+  border-radius: 8px !important;
+}
+.auth-input :deep(.q-field__control:hover::before) {
+  border-color: #C9A96E !important;
+}
+.auth-input :deep(.q-field--focused .q-field__control::after) {
+  border-color: #0D1B3E !important;
+  border-radius: 8px !important;
+}
+.auth-input :deep(.q-field__native) {
+  color: #0D1B3E;
+  font-size: 14px;
+}
+.auth-input :deep(.q-placeholder) {
+  color: #94A3B8;
+}
+
+/* ── Botón ── */
+.auth-btn {
+  background: #0D1B3E !important;
+  color: white !important;
+  border-radius: 10px !important;
+  height: 48px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+}
+
+/* ── Links dorados ── */
+.auth-link {
+  color: #C9A96E;
+  font-size: 13px;
+  text-decoration: none;
+  font-weight: 500;
+}
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Footer ── */
+.auth-footer {
+  margin-top: 20px;
+  font-size: 13px;
+  color: #64748B;
+  text-align: center;
+}
+
+/* ── Banners ── */
+.auth-banner-ok {
+  background: #ECFDF5;
+  color: #065F46;
+  border-radius: 8px;
+}
+.auth-banner-error {
+  background: #FEF2F2;
+  color: #991B1B;
+  border-radius: 8px;
+}
+
+/* ── MOBILE ── */
+.auth-mobile-wrapper {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-mobile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 32px;
+  width: 100%;
+  background: #0B1835;
+  border-radius: 20px 20px 0 0;
+}
+
+.auth-mobile-espiga {
+  height: 52px;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+.auth-mobile-nombre {
+  height: 48px;
+  object-fit: contain;
+}
+
+.auth-mobile-card {
+  background: white;
+  border-radius: 16px;
+  padding: 28px 24px 24px;
+  width: 100%;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+  margin-top: -1px;
+}
+
+/* ── Input mobile: fondo blanco ── */
+.auth-input-mobile :deep(.q-field__control) {
+  background: white;
+  border-radius: 8px !important;
+}
+.auth-input-mobile :deep(.q-field__control::before) {
+  border-color: #E2E8F0 !important;
+  border-radius: 8px !important;
+}
+.auth-input-mobile :deep(.q-field__control:hover::before) {
+  border-color: #C9A96E !important;
+}
+.auth-input-mobile :deep(.q-field--focused .q-field__control::after) {
+  border-color: #0D1B3E !important;
+  border-radius: 8px !important;
+}
+.auth-input-mobile :deep(.q-field__native) {
+  color: #0D1B3E;
+  font-size: 14px;
+}
+</style>
