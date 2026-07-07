@@ -128,6 +128,23 @@
 
         <div class="column items-center" style="width: 64px; gap: 2px;">
 
+          <!-- Inicio (todos los roles) -->
+          <q-item
+            clickable v-ripple
+            :to="{ name: 'Inicio' }"
+            class="sidebar-item"
+            :class="{ 'sidebar-item-active': isActive('Inicio') }"
+            @click="cerrarDrawerMobile"
+          >
+            <i class="ti ti-home"
+              :style="`font-size: 22px; color: ${isActive('Inicio') ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
+            <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
+              Inicio
+            </q-tooltip>
+          </q-item>
+
+          <div class="sidebar-divider" />
+
           <template v-if="auth.hasRole('alumno')">
             <q-item
               clickable v-ripple

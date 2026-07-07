@@ -33,14 +33,12 @@ const routes = [
     children: [
       {
         path: '',
-        redirect: () => {
-          const auth = useAuthStore()
-          const roles = auth.userRoles
-          if (roles.includes('administrador')) return '/admin/usuarios'
-          if (roles.includes('profesor')) return '/profesor/sesion'
-          if (roles.includes('alumno')) return '/alumno/historial'
-          return '/login'
-        },
+        redirect: { name: 'Inicio' },
+      },
+      {
+        path: 'inicio',
+        name: 'Inicio',
+        component: () => import('../views/InicioView.vue'),
       },
       {
         path: 'alumno/historial',
