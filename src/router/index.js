@@ -50,19 +50,19 @@ const routes = [
         path: 'profesor/sesion',
         name: 'ProfesorSesion',
         component: () => import('../views/profesor/DashboardProfesor.vue'),
-        meta: { rol: 'profesor' },
+        meta: { roles: ['profesor', 'administrador'] },
       },
       {
         path: 'profesor/curso/:id/asistencia',
         name: 'PasarAsistencia',
         component: () => import('../views/profesor/PasarAsistencia.vue'),
-        meta: { rol: 'profesor' },
+        meta: { roles: ['profesor', 'administrador'] },
       },
       {
         path: 'profesor/curso/:id/notas',
         name: 'RegistrarNotas',
         component: () => import('../views/profesor/RegistrarNotas.vue'),
-        meta: { rol: 'profesor' },
+        meta: { roles: ['profesor', 'administrador'] },
       },
       {
         path: 'admin/usuarios',

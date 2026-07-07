@@ -1,12 +1,12 @@
 <template>
   <q-page class="q-pa-md" style="background: #F0F2F5; min-height: 100vh;">
-    <div style="color: #0D1B3E; font-size: 20px; font-weight: 700;" class="q-mb-lg">Mis Clases</div>
+    <div style="color: #0D1B3E; font-size: 20px; font-weight: 700;" class="q-mb-lg">Clases</div>
 
     <div v-if="cargando" class="row justify-center q-mt-xl">
       <q-spinner-dots color="primary" size="48px" />
     </div>
 
-    <EmptyState v-else-if="instancias.length === 0" icon="🏫" message="No tienes clases asignadas actualmente" />
+    <EmptyState v-else-if="instancias.length === 0" icon="🏫" message="No hay clases asignadas actualmente" />
 
     <div v-else>
       <!-- Selector Activos / Finalizados -->
@@ -31,7 +31,7 @@
 
         <!-- Panel: Activos -->
         <q-tab-panel name="activos" class="q-pa-none">
-          <EmptyState v-if="cursosActivos.length === 0" icon="🏫" message="No tienes clases activas actualmente" />
+          <EmptyState v-if="cursosActivos.length === 0" icon="🏫" message="No hay clases activas actualmente" />
           <div v-else class="row q-col-gutter-md">
             <div v-for="inst in cursosActivos" :key="inst.id" class="col-12 col-sm-6 col-lg-4">
               <q-card flat class="curso-card">
@@ -130,7 +130,7 @@
 
         <!-- Panel: Finalizados -->
         <q-tab-panel name="finalizados" class="q-pa-none">
-          <EmptyState v-if="cursosFinalizados.length === 0" icon="✅" message="No tienes clases finalizadas" />
+          <EmptyState v-if="cursosFinalizados.length === 0" icon="✅" message="No hay clases finalizadas" />
           <div v-else class="row q-col-gutter-md">
             <div v-for="inst in cursosFinalizados" :key="inst.id" class="col-12 col-sm-6 col-lg-4">
               <q-card flat class="curso-card">
@@ -274,11 +274,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
-import { useAuthStore } from '../../stores/authStore'
 import EmptyState from '../../components/EmptyState.vue'
 
 const $q = useQuasar()
-const auth = useAuthStore()
 const instancias = ref([])
 const cargando = ref(false)
 const dialogoFinalizar = ref(false)
@@ -424,7 +422,6 @@ onMounted(async () => {
   try {
     const batchId = generateBatchId()
     const { data } = await api.get('/courses', {
-      params: { teacher_id: auth.user.id },
       headers: { 'X-Batch-Id': batchId },
     })
     instancias.value = data.map(i => ({ ...i, alumnos: null, cargandoAlumnos: false }))

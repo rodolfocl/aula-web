@@ -145,7 +145,7 @@
 
           <div class="sidebar-divider" />
 
-          <template v-if="auth.hasRole('profesor')">
+          <template v-if="auth.hasRole('profesor') || auth.hasRole('administrador')">
             <q-item
               clickable v-ripple
               :to="{ name: 'ProfesorSesion' }"
@@ -156,7 +156,7 @@
               <i class="ti ti-chalkboard"
                 :style="`font-size: 22px; color: ${isProfesorActive ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
               <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
-                Mis Clases
+                Clases
               </q-tooltip>
             </q-item>
           </template>
