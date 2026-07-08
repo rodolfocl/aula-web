@@ -56,6 +56,16 @@
                       />
                     </q-popup-proxy>
                   </div>
+                  <div v-if="esActivo && sesionSinRegistros(ses)" style="margin-top: 4px; text-align: center;">
+                    <q-btn
+                      round flat dense icon="delete_outline"
+                      size="xs"
+                      style="color: rgba(255,255,255,0.55); width: 20px; height: 20px;"
+                      @click.stop="eliminarSesion(ses)"
+                    >
+                      <q-tooltip class="pdv-tooltip">Eliminar sesión (sin registros)</q-tooltip>
+                    </q-btn>
+                  </div>
                 </th>
 
                 <th v-if="esActivo" class="th-add">
@@ -290,6 +300,29 @@ async function guardar() {
   } finally {
     guardando.value = false
   }
+}
+
+// ── Eliminar sesión ───────────────────────────────────────────────────────────
+function sesionSinRegistros(ses) {
+  return filas.value.every(fila => fila.asistencia[ses.id] == null)
+}
+
+function eliminarSesion(ses) {
+  $q.dialog({
+    title: 'Eliminar sesión',
+    message: `¿Eliminar la sesión del ${formatFecha(ses.scheduled_at)}? Esta acción no se puede deshacer.`,
+    ok: { label: 'Eliminar', color: 'negative', unelevated: true },
+    cancel: { flat: true, label: 'Cancelar' },
+  }).onOk(async () => {
+    try {
+      await api.delete(`/sessions/${ses.id}`)
+      sesiones.value = sesiones.value.filter(s => s.id !== ses.id)
+      for (const fila of filas.value) delete fila.asistencia[ses.id]
+      $q.notify({ type: 'positive', message: 'Sesión eliminada.', position: 'top' })
+    } catch {
+      $q.notify({ type: 'negative', message: 'No se pudo eliminar la sesión.', position: 'top' })
+    }
+  })
 }
 
 // ── Nueva sesión ──────────────────────────────────────────────────────────────
