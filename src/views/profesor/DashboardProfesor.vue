@@ -37,16 +37,17 @@
 
       <!-- Empty per tab -->
       <EmptyState
-        v-if="plantillasFiltradas.length === 0"
+        v-if="(tabActual === 'activos' && cursosActivosFiltrados.length === 0) ||
+              (tabActual === 'finalizados' && plantillasFiltradas.length === 0)"
         icon="🏫"
         :message="tabActual === 'activos' ? 'No hay clases activas' : 'No hay clases finalizadas'"
       />
 
-      <!-- Layout dos paneles -->
-      <div v-else class="dos-paneles">
+      <!-- Layout condicional según tab -->
+      <div v-else :class="tabActual === 'finalizados' ? 'dos-paneles' : null">
 
-        <!-- PANEL IZQUIERDO: lista de plantillas -->
-        <div class="panel-izq">
+        <!-- Panel izquierdo: solo en Finalizados -->
+        <div v-if="tabActual === 'finalizados'" class="panel-izq">
           <div
             v-for="grupo in plantillasFiltradas"
             :key="grupo.template_id"
@@ -58,10 +59,11 @@
           </div>
         </div>
 
-        <!-- PANEL DERECHO: cards del grupo seleccionado -->
-        <div v-if="grupoActual" class="panel-der">
-          <!-- Encabezado -->
-          <div class="panel-der-header">
+        <!-- Área de contenido de cursos -->
+        <div :class="tabActual === 'finalizados' ? 'panel-der' : null">
+
+          <!-- Encabezado del grupo: solo en Finalizados -->
+          <div v-if="tabActual === 'finalizados' && grupoActual" class="panel-der-header">
             <div class="panel-der-icon">
               <i class="ti ti-book-2" style="font-size: 20px; color: white;" />
             </div>
@@ -77,10 +79,10 @@
             </div>
           </div>
 
-          <!-- Cards de cursos -->
-          <div class="cursos-lista">
+          <!-- Cards de cursos (única lista, reutilizada en ambas tabs) -->
+          <div :class="tabActual === 'activos' ? 'cursos-lista cursos-lista--standalone' : 'cursos-lista'">
             <div
-              v-for="inst in grupoActual.instancias"
+              v-for="inst in instanciasActuales"
               :key="inst.id"
               class="curso-card"
             >
@@ -90,7 +92,7 @@
               <!-- Bloque: nombre + período + lápiz (activos) -->
               <div class="curso-bloque curso-bloque-nombre">
                 <div style="display: flex; align-items: center; gap: 6px;">
-                  <div class="curso-nombre">{{ inst.course_name }} {{ inst.year }}</div>
+                  <div class="curso-nombre">{{ inst.course_name }}</div>
                   <div v-if="esActivo(inst)" style="position: relative; display: inline-flex; flex-shrink: 0;" @click.stop>
                     <button class="pdv-action-btn" style="width: 26px; height: 26px;" @click.stop="abrirEditar(inst)">
                       <q-icon name="edit" size="13px" />
@@ -377,6 +379,12 @@ const cursosFinalizados = computed(() =>
     .sort((a, b) => valorOrdenable(b) - valorOrdenable(a))
 )
 
+const cursosActivosFiltrados = computed(() => {
+  const q = busqueda.value.trim().toLowerCase()
+  if (!q) return cursosActivos.value
+  return cursosActivos.value.filter(i => i.course_name?.toLowerCase().includes(q))
+})
+
 const plantillasFiltradas = computed(() => {
   const base = tabActual.value === 'activos' ? cursosActivos.value : cursosFinalizados.value
   const q = busqueda.value.trim().toLowerCase()
@@ -410,6 +418,12 @@ watch(plantillasFiltradas, (grupos) => {
 
 const grupoActual = computed(() =>
   plantillasFiltradas.value.find(g => g.template_id === plantillaSeleccionada.value) ?? null
+)
+
+const instanciasActuales = computed(() =>
+  tabActual.value === 'activos'
+    ? cursosActivosFiltrados.value
+    : (grupoActual.value?.instancias ?? [])
 )
 
 function alumnosActivos(inst) {
@@ -744,6 +758,10 @@ onMounted(async () => {
   gap: 10px;
 }
 
+.cursos-lista--standalone {
+  padding: 0;
+}
+
 .curso-card {
   display: flex;
   align-items: center;
@@ -753,7 +771,7 @@ onMounted(async () => {
   border-radius: 10px;
   overflow: hidden;
   transition: box-shadow 0.15s, border-color 0.15s;
-  min-height: 72px;
+  min-height: 80px;
 }
 
 .curso-card:hover {
@@ -783,13 +801,14 @@ onMounted(async () => {
 
 /* Bloques de info */
 .curso-bloque {
-  padding: 14px 16px;
+  padding: 18px 16px;
   min-width: 0;
 }
 
 .curso-bloque-nombre {
-  width: 200px;
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 160px;
+  max-width: 320px;
 }
 
 .curso-nombre {

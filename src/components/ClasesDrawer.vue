@@ -45,7 +45,7 @@
             </div>
 
             <div v-else-if="alumnosActivos.length === 0" class="cd-empty">
-              <q-icon name="person_off" size="32px" style="color: #C8BFB4;" />
+              <q-icon name="person_off" size="32px" style="color: #C5CCD8;" />
               <span>Aún no hay alumnos inscritos</span>
             </div>
 
@@ -334,7 +334,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
   align-items: center;
   gap: 8px;
   padding: 48px 0;
-  color: #B5ADA3;
+  color: #9AA0AB;
   font-size: 13px;
 }
 
