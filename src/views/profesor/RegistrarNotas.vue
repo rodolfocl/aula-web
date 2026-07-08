@@ -13,6 +13,7 @@
         </div>
       </div>
       <q-btn
+        v-if="esActivo"
         unelevated icon="save" :label="$q.screen.gt.xs ? 'Guardar notas' : ''"
         :loading="guardando" :disable="!hayNotas"
         style="background: #0D1B3E; color: white; border-radius: 8px; flex-shrink: 0;"
@@ -44,7 +45,7 @@
                 <th v-for="ev in evaluaciones" :key="ev.id" class="th-eval">
                   <!-- Edición inline del nombre -->
                   <input
-                    v-if="editandoNombreId === ev.id"
+                    v-if="esActivo && editandoNombreId === ev.id"
                     :ref="el => { if (el) nombreInputEl = el }"
                     v-model="editandoNombre"
                     class="nombre-edit-input"
@@ -52,14 +53,14 @@
                     @keydown.enter.prevent="guardarNombre(ev)"
                     @keydown.esc="cancelarNombre"
                   />
-                  <div v-else class="ev-nombre-click" @click="iniciarEditarNombre(ev)">
+                  <div v-else class="ev-nombre-click" :style="!esActivo && 'cursor: default; pointer-events: none;'" @click="esActivo && iniciarEditarNombre(ev)">
                     <span>{{ ev.name }}</span>
                     <q-icon name="edit" size="11px" class="edit-hint" />
                   </div>
                   <div class="ev-date">{{ formatFechaCorta(ev.date) }}</div>
                 </th>
 
-                <th class="th-add">
+                <th v-if="esActivo" class="th-add">
                   <q-btn round unelevated dense icon="add" size="sm"
                     style="background: rgba(255,255,255,0.22); color: white; border: 1.5px solid rgba(255,255,255,0.5);"
                     @click="abrirDialogoCrear">
@@ -93,14 +94,15 @@
                   </q-tooltip>
                   <input
                     type="number" min="1.0" max="7.0" step="0.1" placeholder="—"
-                    :class="['nota-input', hasError(fila.enrollment_id, ev.id) && 'nota-input--error']"
+                    :readonly="!esActivo"
+                    :class="['nota-input', hasError(fila.enrollment_id, ev.id) && 'nota-input--error', !esActivo && 'nota-input--readonly']"
                     :value="fila.notas[ev.id]"
                     :style="hasError(fila.enrollment_id, ev.id) ? {} : inputStyle(fila.notas[ev.id])"
-                    @blur="setNota(fila, ev.id, $event.target.value)"
+                    @blur="esActivo && setNota(fila, ev.id, $event.target.value)"
                   />
                 </td>
 
-                <td class="td-add" />
+                <td v-if="esActivo" class="td-add" />
 
                 <td class="td-promedio">
                   <span :style="promedioStyle(calcPromedio(fila))">{{ calcPromedio(fila) }}</span>
@@ -146,6 +148,7 @@ const route = useRoute()
 const $q = useQuasar()
 
 const instancia    = ref(null)
+const esActivo     = computed(() => instancia.value?.status === 'active')
 const evaluaciones = ref([])
 const filas        = ref([])
 const cargando     = ref(false)
@@ -489,6 +492,14 @@ tbody .th-sticky { background: white; }
 .nota-input:focus {
   border-color: #0D1B3E;
   box-shadow: 0 0 0 2px rgba(13, 27, 62, 0.08);
+}
+
+.nota-input--readonly {
+  cursor: default;
+  pointer-events: none;
+  background: #FAFAFA;
+  border-color: transparent;
+  color: #555;
 }
 
 .nota-input--error {

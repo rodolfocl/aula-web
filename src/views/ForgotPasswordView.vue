@@ -60,6 +60,7 @@
             <q-banner v-if="error" dense class="auth-banner-error">{{ error }}</q-banner>
 
             <q-btn type="submit" label="Enviar enlace" unelevated class="full-width auth-btn" :loading="cargando" />
+            
           </q-form>
 
           <div class="text-center" style="margin-top: 20px;">

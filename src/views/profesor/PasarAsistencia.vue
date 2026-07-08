@@ -13,6 +13,7 @@
         </div>
       </div>
       <q-btn
+        v-if="esActivo"
         unelevated icon="save" :label="$q.screen.gt.xs ? 'Guardar asistencia' : ''"
         :loading="guardando" :disable="!pendiente"
         style="background: #0D1B3E; color: white; border-radius: 8px; flex-shrink: 0;"
@@ -57,7 +58,7 @@
                   </div>
                 </th>
 
-                <th class="th-add">
+                <th v-if="esActivo" class="th-add">
                   <q-btn round unelevated dense icon="add" size="sm"
                     style="background: rgba(255,255,255,0.22); color: white; border: 1.5px solid rgba(255,255,255,0.5);"
                     @click="abrirDialogoSesion">
@@ -90,7 +91,7 @@
                   </div>
                 </td>
 
-                <td class="td-add" />
+                <td v-if="esActivo" class="td-add" />
 
                 <td class="td-faltas">
                   <div class="faltas-cell">
@@ -155,7 +156,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
@@ -165,6 +166,7 @@ const route = useRoute()
 const $q = useQuasar()
 
 const instancia     = ref(null)
+const esActivo      = computed(() => instancia.value?.status === 'active')
 const sesiones      = ref([])
 const filas         = ref([])
 const cargando      = ref(false)
@@ -200,6 +202,7 @@ async function guardarFecha(ses, nuevaFecha) {
 const CICLO = [null, 'present', 'absent', 'justified']
 
 function ciclarEstado(fila, sessionId) {
+  if (!esActivo.value) return
   const idx = CICLO.indexOf(fila.asistencia[sessionId])
   fila.asistencia[sessionId] = CICLO[(idx + 1) % CICLO.length]
   pendiente.value = true
