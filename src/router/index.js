@@ -76,6 +76,12 @@ const routes = [
         component: () => import('../views/admin/AdminCursos.vue'),
         meta: { roles: ['administrador', 'profesor'] },
       },
+      {
+        path: 'calendario',
+        name: 'Calendario',
+        component: () => import('../views/CalendarioView.vue'),
+        meta: { roles: ['administrador', 'profesor'] },
+      },
     ],
   },
   {

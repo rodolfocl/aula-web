@@ -164,6 +164,22 @@
           <template v-if="auth.hasRole('administrador') || auth.hasRole('profesor')">
             <q-item
               clickable v-ripple
+              :to="{ name: 'Calendario' }"
+              class="sidebar-item"
+              :class="{ 'sidebar-item-active': isActive('Calendario') }"
+              @click="cerrarDrawerMobile"
+            >
+              <i class="ti ti-calendar"
+                :style="`font-size: 22px; color: ${isActive('Calendario') ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
+              <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
+                Calendario
+              </q-tooltip>
+            </q-item>
+          </template>
+
+          <template v-if="auth.hasRole('administrador') || auth.hasRole('profesor')">
+            <q-item
+              clickable v-ripple
               :to="{ name: 'AdminUsuarios' }"
               class="sidebar-item"
               :class="{ 'sidebar-item-active': isActive('AdminUsuarios') }"

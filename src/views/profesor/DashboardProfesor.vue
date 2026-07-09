@@ -237,6 +237,8 @@
             label="Período"
             clearable dense outlined
           />
+          <AppDateField v-model="formEditar.start_date" label="Fecha inicio" />
+          <AppDateField v-model="formEditar.end_date" label="Fecha fin" />
         </div>
         <div class="pdv-dialog-actions">
           <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
@@ -311,6 +313,7 @@ import { useQuasar } from 'quasar'
 import api from '../../services/api'
 import EmptyState from '../../components/EmptyState.vue'
 import ClasesDrawer from '../../components/ClasesDrawer.vue'
+import AppDateField from '../../components/AppDateField.vue'
 
 const $q = useQuasar()
 
@@ -330,7 +333,7 @@ const PERIODOS = ['Primer período', 'Segundo período']
 
 const dialogoEditar      = ref(false)
 const instanciaEditando  = ref(null)
-const formEditar         = ref({ teacher_id: null, day_of_week: '', schedule_time: '', period: '' })
+const formEditar         = ref({ teacher_id: null, day_of_week: '', schedule_time: '', period: '', start_date: '', end_date: '' })
 const guardandoEditar    = ref(false)
 const profesores         = ref([])
 const cargandoProfesores = ref(false)
@@ -453,6 +456,8 @@ async function abrirEditar(inst) {
     day_of_week:   inst.day_of_week ?? '',
     schedule_time: inst.schedule_time?.slice(0, 5) ?? '',
     period:        inst.period ?? '',
+    start_date:    inst.start_date?.slice(0, 10) ?? '',
+    end_date:      inst.end_date?.slice(0, 10) ?? '',
   }
   dialogoEditar.value = true
   if (profesores.value.length === 0) {
@@ -468,7 +473,16 @@ async function abrirEditar(inst) {
   }
 }
 
-async function guardarEdicion() {
+function scheduleChanged() {
+  const inst = instanciaEditando.value
+  return (
+    formEditar.value.start_date  !== (inst.start_date?.slice(0, 10) ?? '') ||
+    formEditar.value.end_date    !== (inst.end_date?.slice(0, 10) ?? '') ||
+    formEditar.value.day_of_week !== (inst.day_of_week ?? '')
+  )
+}
+
+async function doGuardarEdicion() {
   guardandoEditar.value = true
   try {
     const payload = {
@@ -476,6 +490,8 @@ async function guardarEdicion() {
       day_of_week:   formEditar.value.day_of_week || null,
       schedule_time: formEditar.value.schedule_time || null,
       period:        formEditar.value.period || null,
+      start_date:    formEditar.value.start_date || null,
+      end_date:      formEditar.value.end_date || null,
     }
     await api.patch(`/courses/${instanciaEditando.value.id}`, payload)
     const inst = instanciaEditando.value
@@ -484,12 +500,28 @@ async function guardarEdicion() {
     inst.day_of_week   = payload.day_of_week
     inst.schedule_time = payload.schedule_time ? payload.schedule_time + ':00' : null
     inst.period        = payload.period
+    inst.start_date    = payload.start_date
+    inst.end_date      = payload.end_date
     dialogoEditar.value = false
     $q.notify({ type: 'positive', message: 'Curso actualizado correctamente.', position: 'top' })
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo actualizar el curso.', position: 'top' })
   } finally {
     guardandoEditar.value = false
+  }
+}
+
+function guardarEdicion() {
+  if (scheduleChanged()) {
+    $q.dialog({
+      title: 'Actualizar sesiones',
+      message: 'Se generarán nuevas sesiones según las fechas indicadas. Las sesiones que ya tienen asistencia registrada no se verán afectadas.',
+      cancel: { flat: true, label: 'Cancelar', color: 'grey-7' },
+      ok: { unelevated: true, label: 'Confirmar', style: 'background: #0D1B3E; color: white; border-radius: 6px;' },
+      persistent: true,
+    }).onOk(() => doGuardarEdicion())
+  } else {
+    doGuardarEdicion()
   }
 }
 
