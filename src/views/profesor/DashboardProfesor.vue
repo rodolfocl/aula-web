@@ -79,13 +79,19 @@
             </div>
           </div>
 
-          <!-- Cards de cursos (única lista, reutilizada en ambas tabs) -->
+          <!-- Cards de cursos -->
           <div :class="tabActual === 'activos' ? 'cursos-lista cursos-lista--standalone' : 'cursos-lista'">
-            <div
-              v-for="inst in instanciasActuales"
-              :key="inst.id"
-              class="curso-card"
-            >
+            <template v-for="seccion in seccionesActuales" :key="seccion.label ?? 'all'">
+              <div v-if="seccion.label" class="seccion-label">{{ seccion.label }}</div>
+              <div
+                v-for="inst in seccion.items"
+                :key="inst.id"
+                :class="[
+                  'curso-card',
+                  instanciaModal && instanciaModal.id !== inst.id ? 'curso-card--dimmed' : '',
+                  instanciaModal?.id === inst.id ? 'curso-card--editando' : '',
+                ]"
+              >
               <!-- Franja de estado izquierda -->
               <div :class="['curso-stripe', esActivo(inst) ? 'stripe-activo' : 'stripe-finalizado']" />
 
@@ -134,6 +140,11 @@
 
               <!-- Acciones -->
               <div class="curso-acciones" @click.stop>
+                <!-- Chip "Editando" cuando el modal está abierto para esta card -->
+                <div v-if="instanciaModal?.id === inst.id" class="editando-chip">
+                  {{ modalTipo === 'asistencia' ? 'Editando asistencia' : 'Editando notas' }}
+                </div>
+
                 <template v-if="esActivo(inst)">
                   <div style="position: relative; display: inline-flex;">
                     <q-btn
@@ -152,13 +163,13 @@
                     unelevated dense no-caps
                     label="Asistencia"
                     class="curso-btn curso-btn-accion"
-                    :to="{ name: 'PasarAsistencia', params: { id: inst.id } }"
+                    @click="abrirModal(inst, 'asistencia')"
                   />
                   <q-btn
                     unelevated dense no-caps
                     label="Notas"
                     class="curso-btn curso-btn-accion"
-                    :to="{ name: 'RegistrarNotas', params: { id: inst.id } }"
+                    @click="abrirModal(inst, 'notas')"
                   />
                   <q-btn
                     unelevated dense no-caps
@@ -172,17 +183,18 @@
                     unelevated dense no-caps
                     label="Ver asistencia"
                     class="curso-btn curso-btn-neutro"
-                    :to="{ name: 'PasarAsistencia', params: { id: inst.id } }"
+                    @click="abrirModal(inst, 'asistencia')"
                   />
                   <q-btn
                     unelevated dense no-caps
                     label="Ver notas"
                     class="curso-btn curso-btn-neutro"
-                    :to="{ name: 'RegistrarNotas', params: { id: inst.id } }"
+                    @click="abrirModal(inst, 'notas')"
                   />
                 </template>
               </div>
             </div>
+            </template>
           </div>
         </div>
       </div>
@@ -317,6 +329,18 @@
       :instancia="instanciaDrawer"
       @agregar-alumno="abrirInscribirAlumno"
     />
+
+    <!-- Modales de asistencia y notas -->
+    <AsistenciaModal
+      v-if="modalTipo === 'asistencia' && instanciaModal"
+      :instancia="instanciaModal"
+      @close="cerrarModal"
+    />
+    <NotasModal
+      v-if="modalTipo === 'notas' && instanciaModal"
+      :instancia="instanciaModal"
+      @close="cerrarModal"
+    />
   </q-page>
 </template>
 
@@ -327,8 +351,14 @@ import api from '../../services/api'
 import EmptyState from '../../components/EmptyState.vue'
 import ClasesDrawer from '../../components/ClasesDrawer.vue'
 import AppDateField from '../../components/AppDateField.vue'
+import AsistenciaModal from '../../components/AsistenciaModal.vue'
+import NotasModal from '../../components/NotasModal.vue'
+import { useAuthStore } from '../../stores/authStore'
 
-const $q = useQuasar()
+defineOptions({ name: 'DashboardProfesor' })
+
+const $q   = useQuasar()
+const auth = useAuthStore()
 
 const instancias = ref([])
 const cargando   = ref(false)
@@ -360,6 +390,9 @@ const inscribiendo       = ref(null)
 
 const drawerAbierto   = ref(false)
 const instanciaDrawer = ref(null)
+
+const modalTipo      = ref(null) // null | 'asistencia' | 'notas'
+const instanciaModal = ref(null)
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -445,6 +478,28 @@ const instanciasActuales = computed(() =>
     ? cursosActivosFiltrados.value
     : (grupoActual.value?.instancias ?? [])
 )
+
+const esProfesor = computed(() => auth.hasRole('profesor'))
+const userId     = computed(() => auth.user?.id)
+
+const instanciasActualesMias = computed(() =>
+  instanciasActuales.value.filter(i => i.teacher_id === userId.value)
+)
+
+const instanciasActualesOtras = computed(() =>
+  instanciasActuales.value.filter(i => i.teacher_id !== userId.value)
+)
+
+const seccionesActuales = computed(() => {
+  if (!esProfesor.value || instanciasActualesMias.value.length === 0) {
+    return [{ label: null, items: instanciasActuales.value }]
+  }
+  const secciones = [{ label: 'Mis clases', items: instanciasActualesMias.value }]
+  if (instanciasActualesOtras.value.length > 0) {
+    secciones.push({ label: 'Otras clases', items: instanciasActualesOtras.value })
+  }
+  return secciones
+})
 
 function alumnosActivos(inst) {
   return (inst.alumnos ?? []).filter(a => a.status !== 'withdrawn')
@@ -550,6 +605,18 @@ function seleccionarPlantilla(id) {
     instanciaDrawer.value = null
   }
   plantillaSeleccionada.value = id
+}
+
+// ── Acciones: modales ─────────────────────────────────────────────────
+
+function abrirModal(inst, tipo) {
+  instanciaModal.value = inst
+  modalTipo.value = tipo
+}
+
+function cerrarModal() {
+  modalTipo.value = null
+  instanciaModal.value = null
 }
 
 // ── Acciones: drawer ──────────────────────────────────────────────────
@@ -799,6 +866,16 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
+/* ── Encabezados de sección (Mis clases / Otras clases) ── */
+.seccion-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #9AA0AB;
+  padding: 8px 4px 4px;
+}
+
 /* ── Lista de cards de cursos ── */
 .cursos-lista {
   padding: 16px 20px;
@@ -949,5 +1026,30 @@ onMounted(async () => {
   background: #F5F5F5 !important;
   color: #BDBDBD !important;
   cursor: not-allowed !important;
+}
+
+/* ── Resaltado mientras el modal está abierto ── */
+.curso-card--editando {
+  border-color: #8E9EBB !important;
+  background: #E0E6F2 !important;
+  box-shadow: 0 2px 12px rgba(19, 34, 74, 0.14) !important;
+}
+
+.curso-card--dimmed {
+  opacity: 0.52;
+  transition: opacity 0.2s;
+}
+
+.editando-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #DDE2EE;
+  color: #3D5185;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 </style>

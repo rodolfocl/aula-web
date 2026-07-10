@@ -4,11 +4,14 @@
     <!-- Cabecera -->
     <div class="row items-center justify-between q-mb-lg" style="gap: 8px;">
       <div class="row items-center" style="flex: 1; min-width: 0;">
-        <q-btn flat round dense icon="arrow_back" :to="{ name: 'ProfesorSesion' }" style="color: #0D1B3E;" class="q-mr-sm" />
+        <q-btn flat round dense icon="arrow_back" :to="{ name: 'ProfesorSesion' }" style="color: #13224A;" class="q-mr-sm" />
         <div style="min-width: 0;">
-          <div class="text-h6 text-weight-bold" style="color: #0D1B3E;">Registrar Notas</div>
-          <div class="text-caption q-mt-xs" style="color: #94A3B8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            {{ instancia?.course_name }} · {{ instancia?.year }} Período {{ instancia?.period }}
+          <div style="font-size: 12px; color: #9AA0AB; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            Clases / {{ instancia?.course_name ?? '…' }}
+          </div>
+          <div class="text-h6 text-weight-bold" style="color: #13224A; line-height: 1.2;">Registrar Notas</div>
+          <div class="text-caption q-mt-xs" style="color: #9AA0AB; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            {{ infoSubtitulo }}
           </div>
         </div>
       </div>
@@ -149,6 +152,17 @@ const $q = useQuasar()
 
 const instancia    = ref(null)
 const esActivo     = computed(() => instancia.value?.status === 'active')
+
+const infoSubtitulo = computed(() => {
+  const i = instancia.value
+  if (!i) return ''
+  return [
+    i.teacher_name,
+    i.day_of_week,
+    i.schedule_time?.slice(0, 5),
+    i.year && i.period ? `${i.year} ${i.period}` : (i.year ?? i.period),
+  ].filter(Boolean).join(' · ')
+})
 const evaluaciones = ref([])
 const filas        = ref([])
 const cargando     = ref(false)
