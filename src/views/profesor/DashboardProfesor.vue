@@ -135,6 +135,19 @@
               <!-- Acciones -->
               <div class="curso-acciones" @click.stop>
                 <template v-if="esActivo(inst)">
+                  <div style="position: relative; display: inline-flex;">
+                    <q-btn
+                      unelevated dense no-caps
+                      icon="videocam"
+                      label="Iniciar Clase"
+                      :class="['curso-btn', inst.google_meet_link ? 'curso-btn-meet' : 'curso-btn-meet-disabled']"
+                      :disable="!inst.google_meet_link"
+                      @click="inst.google_meet_link && abrirMeet(inst.google_meet_link)"
+                    />
+                    <div v-if="!inst.google_meet_link" style="position: absolute; inset: 0; pointer-events: none;">
+                      <q-tooltip class="pdv-tooltip">Este curso no tiene reunión de Meet configurada</q-tooltip>
+                    </div>
+                  </div>
                   <q-btn
                     unelevated dense no-caps
                     label="Asistencia"
@@ -352,6 +365,10 @@ const instanciaDrawer = ref(null)
 
 function esActivo(inst) {
   return inst.status === 'active'
+}
+
+function abrirMeet(link) {
+  window.open(link, '_blank', 'noopener,noreferrer')
 }
 
 function ordenPeriodo(period) {
@@ -917,5 +934,20 @@ onMounted(async () => {
 
 .curso-btn-peligro:hover {
   background: #FCDAD7 !important;
+}
+
+.curso-btn-meet {
+  background: #E8F5E9 !important;
+  color: #1E7E34 !important;
+}
+
+.curso-btn-meet:hover {
+  background: #C8E6C9 !important;
+}
+
+.curso-btn-meet-disabled {
+  background: #F5F5F5 !important;
+  color: #BDBDBD !important;
+  cursor: not-allowed !important;
 }
 </style>
