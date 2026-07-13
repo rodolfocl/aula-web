@@ -9,20 +9,26 @@
     <EmptyState v-else-if="instancias.length === 0" icon="🏫" message="No hay clases asignadas actualmente" />
 
     <div v-else>
-      <!-- Tabs + buscador -->
-      <div class="row items-center justify-between q-mb-md" style="flex-wrap: wrap; gap: 10px;">
+      <!-- ── Tabs + buscador ──────────────────────────────────── -->
+      <div class="row items-center justify-between q-mb-lg" style="flex-wrap: wrap; gap: 10px;">
         <div class="seg-control">
           <button
-            :class="['seg-btn', tabActual === 'activos' && 'seg-btn--active']"
-            @click="tabActual = 'activos'"
+            :class="['seg-btn', tabActual === 'todas' && 'seg-btn--active']"
+            @click="tabActual = 'todas'"
           >
-            Activos <span class="seg-count">{{ cursosActivos.length }}</span>
+            Todas <span class="seg-count">{{ instancias.length }}</span>
           </button>
           <button
-            :class="['seg-btn', tabActual === 'finalizados' && 'seg-btn--active']"
-            @click="tabActual = 'finalizados'"
+            :class="['seg-btn', tabActual === 'activas' && 'seg-btn--active']"
+            @click="tabActual = 'activas'"
           >
-            Finalizados <span class="seg-count">{{ cursosFinalizados.length }}</span>
+            Activas <span class="seg-count">{{ cursosActivos.length }}</span>
+          </button>
+          <button
+            :class="['seg-btn', tabActual === 'finalizadas' && 'seg-btn--active']"
+            @click="tabActual = 'finalizadas'"
+          >
+            Finalizadas <span class="seg-count">{{ cursosFinalizados.length }}</span>
           </button>
         </div>
         <q-input
@@ -35,67 +41,84 @@
         </q-input>
       </div>
 
-      <!-- Empty per tab -->
+      <!-- ── Empty per tab ───────────────────────────────────── -->
       <EmptyState
-        v-if="(tabActual === 'activos' && cursosActivosFiltrados.length === 0) ||
-              (tabActual === 'finalizados' && plantillasFiltradas.length === 0)"
+        v-if="instanciasParaTab.length === 0"
         icon="🏫"
-        :message="tabActual === 'activos' ? 'No hay clases activas' : 'No hay clases finalizadas'"
+        :message="busqueda ? 'No se encontraron clases' : tabActual === 'activas' ? 'No hay clases activas' : 'No hay clases finalizadas'"
       />
 
-      <!-- Layout condicional según tab -->
-      <div v-else :class="tabActual === 'finalizados' ? 'dos-paneles' : null">
+      <template v-else>
+        <!-- ── HERO: Tu próxima clase ──────────────────────────── -->
+        <div
+          v-if="heroInst"
+          :class="['hero-card', instanciaModal && instanciaModal.id !== heroInst.id ? 'hero-card--dimmed' : '']"
+        >
+          <div class="hero-label">TU PRÓXIMA CLASE</div>
 
-        <!-- Panel izquierdo: solo en Finalizados -->
-        <div v-if="tabActual === 'finalizados'" class="panel-izq">
-          <div
-            v-for="grupo in plantillasFiltradas"
-            :key="grupo.template_id"
-            :class="['plantilla-item', plantillaSeleccionada === grupo.template_id && 'plantilla-item--activa']"
-            @click="seleccionarPlantilla(grupo.template_id)"
-          >
-            <span class="plantilla-nombre">{{ grupo.nombre }}</span>
-            <span class="plantilla-badge">{{ grupo.instancias.length }}</span>
+          <div class="hero-top">
+            <div style="min-width: 0; flex: 1;">
+              <div class="hero-nombre">{{ heroInst.course_name }}</div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px;">
+                <div class="hero-meta" style="margin-top: 0;">{{ heroMeta(heroInst) }}</div>
+                <button class="hero-alumnos-btn" @click.stop="abrirDrawer(heroInst)">
+                  <q-spinner-dots v-if="heroInst.cargandoAlumnos" size="12px" style="color: rgba(255,255,255,0.6);" />
+                  <template v-else>{{ alumnosActivos(heroInst).length }} {{ alumnosActivos(heroInst).length === 1 ? 'alumno' : 'alumnos' }}</template>
+                  <q-icon name="visibility" size="14px" />
+                </button>
+              </div>
+            </div>
+            <div @click.stop>
+              <button class="hero-edit-btn" @click.stop="abrirEditar(heroInst)">
+                <q-icon name="edit" size="14px" />
+                <q-tooltip class="pdv-tooltip">Editar curso</q-tooltip>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-acciones">
+            <div style="position: relative; display: inline-flex;">
+              <button
+                :class="['hero-btn', heroInst.google_meet_link ? 'hero-btn-meet' : 'hero-btn-disabled']"
+                :disabled="!heroInst.google_meet_link"
+                @click="heroInst.google_meet_link && abrirMeet(heroInst.google_meet_link)"
+              >
+                <q-icon name="videocam" size="15px" style="margin-right: 4px;" />
+                Iniciar Clase
+              </button>
+              <div v-if="!heroInst.google_meet_link" style="position: absolute; inset: 0; pointer-events: none;">
+                <q-tooltip class="pdv-tooltip">Este curso no tiene reunión de Meet configurada</q-tooltip>
+              </div>
+            </div>
+            <button class="hero-btn hero-btn-accion" @click="abrirModal(heroInst, 'asistencia')">
+              Asistencia
+            </button>
+            <button class="hero-btn hero-btn-accion" @click="abrirModal(heroInst, 'notas')">
+              Notas
+            </button>
+            <div v-if="instanciaModal?.id === heroInst.id" class="hero-editando-chip">
+              {{ modalTipo === 'asistencia' ? 'Editando asistencia' : 'Editando notas' }}
+            </div>
           </div>
         </div>
 
-        <!-- Área de contenido de cursos -->
-        <div :class="tabActual === 'finalizados' ? 'panel-der' : null">
-
-          <!-- Encabezado del grupo: solo en Finalizados -->
-          <div v-if="tabActual === 'finalizados' && grupoActual" class="panel-der-header">
-            <div class="panel-der-icon">
-              <i class="ti ti-book-2" style="font-size: 20px; color: white;" />
-            </div>
-            <div>
-              <div style="font-size: 17px; font-weight: 700; color: #13224A;">{{ grupoActual.nombre }}</div>
-              <div style="font-size: 13px; color: #9AA0AB;">
-                {{ grupoActual.instancias.length }}
-                {{ grupoActual.instancias.length === 1 ? 'curso' : 'cursos' }}
-                ·
-                {{ totalAlumnosGrupo }}
-                {{ totalAlumnosGrupo === 1 ? 'alumno' : 'alumnos' }} en total
-              </div>
-            </div>
-          </div>
-
-          <!-- Cards de cursos -->
-          <div :class="tabActual === 'activos' ? 'cursos-lista cursos-lista--standalone' : 'cursos-lista'">
-            <template v-for="seccion in seccionesActuales" :key="seccion.label ?? 'all'">
-              <div v-if="seccion.label" class="seccion-label">{{ seccion.label }}</div>
-              <div
-                v-for="inst in seccion.items"
-                :key="inst.id"
-                :class="[
-                  'curso-card',
-                  instanciaModal && instanciaModal.id !== inst.id ? 'curso-card--dimmed' : '',
-                  instanciaModal?.id === inst.id ? 'curso-card--editando' : '',
-                ]"
-              >
+        <!-- ── Cursos propios extra + Otras clases ─────────────── -->
+        <template v-for="seccion in seccionesListado" :key="seccion.key">
+          <div v-if="seccion.label" class="otras-clases-label">{{ seccion.label }}</div>
+          <div class="cursos-lista">
+            <div
+              v-for="inst in seccion.items"
+              :key="inst.id"
+              :class="[
+                'curso-card',
+                instanciaModal && instanciaModal.id !== inst.id ? 'curso-card--dimmed' : '',
+                instanciaModal?.id === inst.id ? 'curso-card--editando' : '',
+              ]"
+            >
               <!-- Franja de estado izquierda -->
-              <div :class="['curso-stripe', esActivo(inst) ? 'stripe-activo' : 'stripe-finalizado']" />
+              <div :class="['curso-stripe', stripeClass(inst, seccion.esPropia)]" />
 
-              <!-- Bloque: nombre + período + lápiz (activos) -->
+              <!-- Bloque: nombre + período + lápiz -->
               <div class="curso-bloque curso-bloque-nombre">
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <div class="curso-nombre">{{ inst.course_name }}</div>
@@ -125,7 +148,7 @@
                 </div>
               </div>
 
-              <!-- Bloque: alumnos (clickeable → drawer) -->
+              <!-- Bloque: alumnos → drawer -->
               <div
                 class="curso-bloque curso-bloque-alumnos curso-bloque-ver"
                 @click.stop="abrirDrawer(inst)"
@@ -140,17 +163,13 @@
 
               <!-- Acciones -->
               <div class="curso-acciones" @click.stop>
-                <!-- Chip "Editando" cuando el modal está abierto para esta card -->
                 <div v-if="instanciaModal?.id === inst.id" class="editando-chip">
                   {{ modalTipo === 'asistencia' ? 'Editando asistencia' : 'Editando notas' }}
                 </div>
-
                 <template v-if="esActivo(inst)">
                   <div style="position: relative; display: inline-flex;">
                     <q-btn
-                      unelevated dense no-caps
-                      icon="videocam"
-                      label="Iniciar Clase"
+                      unelevated dense no-caps icon="videocam" label="Iniciar Clase"
                       :class="['curso-btn', inst.google_meet_link ? 'curso-btn-meet' : 'curso-btn-meet-disabled']"
                       :disable="!inst.google_meet_link"
                       @click="inst.google_meet_link && abrirMeet(inst.google_meet_link)"
@@ -159,48 +178,39 @@
                       <q-tooltip class="pdv-tooltip">Este curso no tiene reunión de Meet configurada</q-tooltip>
                     </div>
                   </div>
-                  <q-btn
-                    unelevated dense no-caps
-                    label="Asistencia"
-                    class="curso-btn curso-btn-accion"
-                    @click="abrirModal(inst, 'asistencia')"
-                  />
-                  <q-btn
-                    unelevated dense no-caps
-                    label="Notas"
-                    class="curso-btn curso-btn-accion"
-                    @click="abrirModal(inst, 'notas')"
-                  />
-                  <q-btn
-                    unelevated dense no-caps
-                    label="Finalizar"
-                    class="curso-btn curso-btn-peligro"
-                    @click="abrirFinalizar(inst)"
-                  />
+                  <q-btn unelevated dense no-caps label="Asistencia" class="curso-btn curso-btn-accion" @click="abrirModal(inst, 'asistencia')" />
+                  <q-btn unelevated dense no-caps label="Notas"       class="curso-btn curso-btn-accion" @click="abrirModal(inst, 'notas')" />
+                  <q-btn unelevated dense no-caps label="Finalizar"   class="curso-btn curso-btn-peligro" @click="abrirFinalizar(inst)" />
                 </template>
                 <template v-else>
-                  <q-btn
-                    unelevated dense no-caps
-                    label="Ver asistencia"
-                    class="curso-btn curso-btn-neutro"
-                    @click="abrirModal(inst, 'asistencia')"
-                  />
-                  <q-btn
-                    unelevated dense no-caps
-                    label="Ver notas"
-                    class="curso-btn curso-btn-neutro"
-                    @click="abrirModal(inst, 'notas')"
-                  />
+                  <q-btn unelevated dense no-caps label="Ver asistencia" class="curso-btn curso-btn-neutro" @click="abrirModal(inst, 'asistencia')" />
+                  <q-btn unelevated dense no-caps label="Ver notas"      class="curso-btn curso-btn-neutro" @click="abrirModal(inst, 'notas')" />
                 </template>
               </div>
             </div>
-            </template>
           </div>
-        </div>
-      </div>
+
+          <!-- ── Paginación (solo sección "otras") ──────────────── -->
+          <div v-if="seccion.key === 'otras' && totalPaginasOtras > 1" class="paginacion">
+            <button
+              class="pag-btn"
+              :class="paginaOtras === 1 ? 'pag-btn--dis' : ''"
+              :disabled="paginaOtras === 1"
+              @click="paginaOtras--"
+            >‹ Anterior</button>
+            <span class="pag-info">Página {{ paginaOtras }} de {{ totalPaginasOtras }}</span>
+            <button
+              class="pag-btn"
+              :class="paginaOtras === totalPaginasOtras ? 'pag-btn--dis' : ''"
+              :disabled="paginaOtras === totalPaginasOtras"
+              @click="paginaOtras++"
+            >Siguiente ›</button>
+          </div>
+        </template>
+      </template>
     </div>
 
-    <!-- Modal finalizar curso -->
+    <!-- ── Modal finalizar curso ───────────────────────────────── -->
     <q-dialog v-model="dialogoFinalizar" :maximized="$q.screen.lt.sm">
       <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : ''">
         <div class="pdv-dialog-title" style="color: #991B1B;">Finalizar curso</div>
@@ -210,12 +220,7 @@
             <strong>{{ instanciaAFinalizar?.course_name }} {{ instanciaAFinalizar?.year }}</strong> —
             Período {{ instanciaAFinalizar?.period }}?
           </p>
-          <q-input
-            v-model="motivoFinalizar"
-            label="Motivo o comentario de cierre"
-            type="textarea"
-            autogrow
-          />
+          <q-input v-model="motivoFinalizar" label="Motivo o comentario de cierre" type="textarea" autogrow />
         </div>
         <div class="pdv-dialog-actions">
           <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
@@ -229,7 +234,7 @@
       </q-card>
     </q-dialog>
 
-    <!-- Modal editar curso -->
+    <!-- ── Modal editar curso ──────────────────────────────────── -->
     <q-dialog v-model="dialogoEditar" :maximized="$q.screen.lt.sm">
       <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : 'min-width: 420px; max-width: 480px;'">
         <div class="pdv-dialog-title">Editar curso</div>
@@ -237,46 +242,21 @@
           <div style="font-size: 13px; color: #64748B; margin-bottom: 4px;">
             {{ instanciaEditando?.course_name }} {{ instanciaEditando?.year }}
           </div>
-          <q-select
-            v-model="formEditar.teacher_id"
-            :options="opcionesProfesores"
-            :loading="cargandoProfesores"
-            label="Profesor"
-            emit-value map-options dense outlined clearable
-          />
-          <q-select
-            v-model="formEditar.day_of_week"
-            :options="DIAS"
-            label="Día"
-            clearable dense outlined
-          />
-          <q-input
-            v-model="formEditar.schedule_time"
-            label="Hora"
-            type="time"
-            dense outlined
-          />
-          <q-select
-            v-model="formEditar.period"
-            :options="PERIODOS"
-            label="Período"
-            clearable dense outlined
-          />
+          <q-select v-model="formEditar.teacher_id" :options="opcionesProfesores" :loading="cargandoProfesores" label="Profesor" emit-value map-options dense outlined clearable />
+          <q-select v-model="formEditar.day_of_week" :options="DIAS" label="Día" clearable dense outlined />
+          <q-input  v-model="formEditar.schedule_time" label="Hora" type="time" dense outlined />
+          <q-select v-model="formEditar.period" :options="PERIODOS" label="Período" clearable dense outlined />
           <AppDateField v-model="formEditar.start_date" label="Fecha inicio" />
-          <AppDateField v-model="formEditar.end_date" label="Fecha fin" />
+          <AppDateField v-model="formEditar.end_date"   label="Fecha fin" />
         </div>
         <div class="pdv-dialog-actions">
           <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" />
-          <q-btn
-            unelevated label="Guardar" :loading="guardandoEditar"
-            class="pdv-btn-save"
-            @click="guardarEdicion"
-          />
+          <q-btn unelevated label="Guardar" :loading="guardandoEditar" class="pdv-btn-save" @click="guardarEdicion" />
         </div>
       </q-card>
     </q-dialog>
 
-    <!-- Modal inscribir alumno -->
+    <!-- ── Modal inscribir alumno ─────────────────────────────── -->
     <q-dialog v-model="dialogoInscribir" :maximized="$q.screen.lt.sm">
       <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : 'min-width: 440px; max-width: 500px;'">
         <div class="pdv-dialog-title">Inscribir alumno</div>
@@ -284,11 +264,7 @@
           <div style="font-size: 13px; color: #64748B; margin-top: -8px;">
             {{ instanciaInscribir?.course_name }} {{ instanciaInscribir?.year }} — Período {{ instanciaInscribir?.period }}
           </div>
-          <q-input
-            v-model="busquedaAlumno"
-            placeholder="Buscar por nombre..."
-            dense outlined clearable
-          >
+          <q-input v-model="busquedaAlumno" placeholder="Buscar por nombre..." dense outlined clearable>
             <template #prepend><q-icon name="search" color="grey-5" /></template>
           </q-input>
           <div v-if="buscandoAlumnos" class="row justify-center q-py-lg">
@@ -299,18 +275,14 @@
           </div>
           <div v-else style="max-height: 320px; overflow-y: auto;">
             <div
-              v-for="alumno in alumnosFiltrados"
-              :key="alumno.id"
+              v-for="alumno in alumnosFiltrados" :key="alumno.id"
               style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #F1F5F9;"
             >
               <div style="display: flex; align-items: center; gap: 10px;">
                 <div class="pdv-avatar pdv-avatar-sm">{{ iniciales(alumno.full_name) }}</div>
                 <div style="font-size: 14px; color: #0D1B3E; font-weight: 500;">{{ alumno.full_name }}</div>
               </div>
-              <button
-                class="pdv-action-btn pdv-action-success"
-                @click="inscribirAlumno(alumno)"
-              >
+              <button class="pdv-action-btn pdv-action-success" @click="inscribirAlumno(alumno)">
                 <q-icon name="person_add" size="16px" />
                 <q-tooltip class="pdv-tooltip">Inscribir</q-tooltip>
               </button>
@@ -323,24 +295,16 @@
       </q-card>
     </q-dialog>
 
-    <!-- Drawer de alumnos del curso -->
+    <!-- ── Drawer de alumnos ───────────────────────────────────── -->
     <ClasesDrawer
       v-model="drawerAbierto"
       :instancia="instanciaDrawer"
       @agregar-alumno="abrirInscribirAlumno"
     />
 
-    <!-- Modales de asistencia y notas -->
-    <AsistenciaModal
-      v-if="modalTipo === 'asistencia' && instanciaModal"
-      :instancia="instanciaModal"
-      @close="cerrarModal"
-    />
-    <NotasModal
-      v-if="modalTipo === 'notas' && instanciaModal"
-      :instancia="instanciaModal"
-      @close="cerrarModal"
-    />
+    <!-- ── Modales asistencia / notas ─────────────────────────── -->
+    <AsistenciaModal v-if="modalTipo === 'asistencia' && instanciaModal" :instancia="instanciaModal" @close="cerrarModal" />
+    <NotasModal      v-if="modalTipo === 'notas'      && instanciaModal" :instancia="instanciaModal" @close="cerrarModal" />
   </q-page>
 </template>
 
@@ -348,11 +312,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import api from '../../services/api'
-import EmptyState from '../../components/EmptyState.vue'
-import ClasesDrawer from '../../components/ClasesDrawer.vue'
-import AppDateField from '../../components/AppDateField.vue'
+import EmptyState     from '../../components/EmptyState.vue'
+import ClasesDrawer   from '../../components/ClasesDrawer.vue'
+import AppDateField   from '../../components/AppDateField.vue'
 import AsistenciaModal from '../../components/AsistenciaModal.vue'
-import NotasModal from '../../components/NotasModal.vue'
+import NotasModal     from '../../components/NotasModal.vue'
 import { useAuthStore } from '../../stores/authStore'
 
 defineOptions({ name: 'DashboardProfesor' })
@@ -360,16 +324,16 @@ defineOptions({ name: 'DashboardProfesor' })
 const $q   = useQuasar()
 const auth = useAuthStore()
 
+// ── Estado base ───────────────────────────────────────────────────────
 const instancias = ref([])
 const cargando   = ref(false)
-const tabActual  = ref('activos')
+const tabActual  = ref('activas')
 const busqueda   = ref('')
-const plantillaSeleccionada = ref(null)
 
-const dialogoFinalizar   = ref(false)
+const dialogoFinalizar    = ref(false)
 const instanciaAFinalizar = ref(null)
-const motivoFinalizar    = ref('')
-const finalizando        = ref(false)
+const motivoFinalizar     = ref('')
+const finalizando         = ref(false)
 
 const DIAS    = ['Lunes', 'Martes', 'Miércoles']
 const PERIODOS = ['Primer período', 'Segundo período']
@@ -391,18 +355,12 @@ const inscribiendo       = ref(null)
 const drawerAbierto   = ref(false)
 const instanciaDrawer = ref(null)
 
-const modalTipo      = ref(null) // null | 'asistencia' | 'notas'
+const modalTipo      = ref(null)
 const instanciaModal = ref(null)
 
-// ── Helpers ──────────────────────────────────────────────────────────
-
-function esActivo(inst) {
-  return inst.status === 'active'
-}
-
-function abrirMeet(link) {
-  window.open(link, '_blank', 'noopener,noreferrer')
-}
+// ── Helpers ───────────────────────────────────────────────────────────
+function esActivo(inst)  { return inst.status === 'active' }
+function abrirMeet(link) { window.open(link, '_blank', 'noopener,noreferrer') }
 
 function ordenPeriodo(period) {
   if (/segundo/i.test(period)) return 2
@@ -410,93 +368,105 @@ function ordenPeriodo(period) {
   return 0
 }
 
-function valorOrdenable(inst) {
-  return inst.year * 10 + ordenPeriodo(inst.period)
-}
+function valorOrdenable(inst) { return inst.year * 10 + ordenPeriodo(inst.period) }
 
 function iniciales(nombre) {
   return (nombre ?? '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
 }
 
-// ── Computed ─────────────────────────────────────────────────────────
+const DIAS_NUM = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6, 'Domingo': 0 }
 
+function minutosHastaClase(inst) {
+  const diaCurso = DIAS_NUM[inst.day_of_week]
+  if (diaCurso === undefined) return Infinity
+  const [h, m] = (inst.schedule_time?.slice(0, 5) ?? '00:00').split(':').map(Number)
+  const now = new Date()
+  const hoy = now.getDay()
+  const horaActual = now.getHours() * 60 + now.getMinutes()
+  const horaCurso  = (h ?? 0) * 60 + (m ?? 0)
+  let dias = (diaCurso - hoy + 7) % 7
+  if (dias === 0 && horaCurso <= horaActual) dias = 7
+  return dias * 1440 + horaCurso
+}
+
+function sortByScheduleProximity(lista) {
+  return [...lista].sort((a, b) => minutosHastaClase(a) - minutosHastaClase(b))
+}
+
+function heroMeta(inst) {
+  const diaHora = [inst.day_of_week, inst.schedule_time?.slice(0, 5)].filter(Boolean).join(' ')
+  return [diaHora, inst.period].filter(Boolean).join(' · ')
+}
+
+function stripeClass(inst, esPropia) {
+  if (esPropia) return 'stripe-propia'
+  return esActivo(inst) ? 'stripe-activo' : 'stripe-finalizado'
+}
+
+// ── Computed base ─────────────────────────────────────────────────────
 const cursosActivos = computed(() =>
-  instancias.value
-    .filter(i => i.status === 'active')
-    .sort((a, b) => valorOrdenable(b) - valorOrdenable(a))
+  instancias.value.filter(i => i.status === 'active').sort((a, b) => valorOrdenable(b) - valorOrdenable(a))
 )
 
 const cursosFinalizados = computed(() =>
-  instancias.value
-    .filter(i => i.status !== 'active')
-    .sort((a, b) => valorOrdenable(b) - valorOrdenable(a))
+  instancias.value.filter(i => i.status !== 'active').sort((a, b) => valorOrdenable(b) - valorOrdenable(a))
 )
 
-const cursosActivosFiltrados = computed(() => {
+const instanciasParaTab = computed(() => {
   const q = busqueda.value.trim().toLowerCase()
-  if (!q) return cursosActivos.value
-  return cursosActivos.value.filter(i => i.course_name?.toLowerCase().includes(q))
+  let base
+  if      (tabActual.value === 'todas')      base = [...cursosActivos.value, ...cursosFinalizados.value]
+  else if (tabActual.value === 'activas')    base = cursosActivos.value
+  else                                        base = cursosFinalizados.value
+  return q ? base.filter(i => i.course_name?.toLowerCase().includes(q)) : base
 })
-
-const plantillasFiltradas = computed(() => {
-  const base = tabActual.value === 'activos' ? cursosActivos.value : cursosFinalizados.value
-  const q = busqueda.value.trim().toLowerCase()
-  const filtrado = q
-    ? base.filter(i => i.course_name?.toLowerCase().includes(q))
-    : base
-
-  const mapa = {}
-  for (const inst of filtrado) {
-    const key = inst.template_id ?? inst.course_name
-    if (!mapa[key]) {
-      mapa[key] = { template_id: key, nombre: inst.course_name, instancias: [] }
-    }
-    mapa[key].instancias.push(inst)
-  }
-  for (const g of Object.values(mapa)) {
-    g.instancias.sort((a, b) => valorOrdenable(b) - valorOrdenable(a))
-  }
-  return Object.values(mapa).sort((a, b) =>
-    (a.nombre ?? '').localeCompare(b.nombre ?? '', 'es')
-  )
-})
-
-watch(plantillasFiltradas, (grupos) => {
-  const estaEnGrupos = grupos.some(g => g.template_id === plantillaSeleccionada.value)
-  if (!estaEnGrupos) {
-    plantillaSeleccionada.value = grupos[0]?.template_id ?? null
-    drawerAbierto.value = false
-  }
-}, { immediate: true })
-
-const grupoActual = computed(() =>
-  plantillasFiltradas.value.find(g => g.template_id === plantillaSeleccionada.value) ?? null
-)
-
-const instanciasActuales = computed(() =>
-  tabActual.value === 'activos'
-    ? cursosActivosFiltrados.value
-    : (grupoActual.value?.instancias ?? [])
-)
 
 const esProfesor = computed(() => auth.hasRole('profesor'))
 const userId     = computed(() => auth.user?.id)
 
-const instanciasActualesMias = computed(() =>
-  instanciasActuales.value.filter(i => i.teacher_id === userId.value)
+const heroInst = computed(() => {
+  if (!esProfesor.value || tabActual.value === 'finalizadas') return null
+  const mias = instanciasParaTab.value.filter(i => i.teacher_id === userId.value && i.status === 'active')
+  return mias.length ? sortByScheduleProximity(mias)[0] : null
+})
+
+const instanciasHeroExtra = computed(() => {
+  if (!heroInst.value) return []
+  const mias = instanciasParaTab.value.filter(i => i.teacher_id === userId.value && i.status === 'active')
+  return sortByScheduleProximity(mias).slice(1)
+})
+
+const instanciasOtrasConFiltro = computed(() => {
+  const heroIds = new Set([heroInst.value?.id, ...instanciasHeroExtra.value.map(i => i.id)].filter(Boolean))
+  return instanciasParaTab.value.filter(i => !heroIds.has(i.id))
+})
+
+const ITEMS_POR_PAGINA = 10
+const paginaOtras = ref(1)
+
+watch([tabActual, busqueda], () => { paginaOtras.value = 1 })
+
+const totalPaginasOtras = computed(() =>
+  Math.ceil(instanciasOtrasConFiltro.value.length / ITEMS_POR_PAGINA)
 )
 
-const instanciasActualesOtras = computed(() =>
-  instanciasActuales.value.filter(i => i.teacher_id !== userId.value)
-)
+const instanciasOtrasPaginadas = computed(() => {
+  const inicio = (paginaOtras.value - 1) * ITEMS_POR_PAGINA
+  return instanciasOtrasConFiltro.value.slice(inicio, inicio + ITEMS_POR_PAGINA)
+})
 
-const seccionesActuales = computed(() => {
-  if (!esProfesor.value || instanciasActualesMias.value.length === 0) {
-    return [{ label: null, items: instanciasActuales.value }]
+const seccionesListado = computed(() => {
+  const secciones = []
+  if (instanciasHeroExtra.value.length > 0) {
+    secciones.push({ key: 'extra', label: null, items: instanciasHeroExtra.value, esPropia: true })
   }
-  const secciones = [{ label: 'Mis clases', items: instanciasActualesMias.value }]
-  if (instanciasActualesOtras.value.length > 0) {
-    secciones.push({ label: 'Otras clases', items: instanciasActualesOtras.value })
+  if (instanciasOtrasConFiltro.value.length > 0) {
+    secciones.push({
+      key: 'otras',
+      label: heroInst.value ? 'Otras clases' : null,
+      items: instanciasOtrasPaginadas.value,
+      esPropia: false,
+    })
   }
   return secciones
 })
@@ -504,10 +474,6 @@ const seccionesActuales = computed(() => {
 function alumnosActivos(inst) {
   return (inst.alumnos ?? []).filter(a => a.status !== 'withdrawn')
 }
-
-const totalAlumnosGrupo = computed(() =>
-  grupoActual.value?.instancias.reduce((sum, inst) => sum + alumnosActivos(inst).length, 0) ?? 0
-)
 
 const opcionesProfesores = computed(() =>
   profesores.value.map(p => ({ label: p.full_name, value: p.id }))
@@ -520,7 +486,6 @@ const alumnosFiltrados = computed(() => {
 })
 
 // ── Acciones: editar curso ────────────────────────────────────────────
-
 async function abrirEditar(inst) {
   instanciaEditando.value = inst
   formEditar.value = {
@@ -597,49 +562,24 @@ function guardarEdicion() {
   }
 }
 
-// ── Acciones: plantilla ───────────────────────────────────────────────
-
-function seleccionarPlantilla(id) {
-  if (plantillaSeleccionada.value !== id) {
-    drawerAbierto.value = false
-    instanciaDrawer.value = null
-  }
-  plantillaSeleccionada.value = id
-}
-
 // ── Acciones: modales ─────────────────────────────────────────────────
-
-function abrirModal(inst, tipo) {
-  instanciaModal.value = inst
-  modalTipo.value = tipo
-}
-
-function cerrarModal() {
-  modalTipo.value = null
-  instanciaModal.value = null
-}
+function abrirModal(inst, tipo) { instanciaModal.value = inst; modalTipo.value = tipo }
+function cerrarModal()          { modalTipo.value = null; instanciaModal.value = null }
 
 // ── Acciones: drawer ──────────────────────────────────────────────────
-
-function abrirDrawer(inst) {
-  instanciaDrawer.value = inst
-  drawerAbierto.value = true
-}
+function abrirDrawer(inst) { instanciaDrawer.value = inst; drawerAbierto.value = true }
 
 // ── Acciones: inscribir alumno ────────────────────────────────────────
-
 async function abrirInscribirAlumno(inst) {
   instanciaInscribir.value = inst
-  busquedaAlumno.value = ''
+  busquedaAlumno.value     = ''
   alumnosDisponibles.value = []
-  dialogoInscribir.value = true
-  buscandoAlumnos.value = true
+  dialogoInscribir.value   = true
+  buscandoAlumnos.value    = true
   try {
     const { data } = await api.get('/users')
     const yaInscritos = new Set(
-      (inst.alumnos ?? [])
-        .filter(a => a.status !== 'withdrawn')
-        .map(a => a.student_id ?? a.id)
+      (inst.alumnos ?? []).filter(a => a.status !== 'withdrawn').map(a => a.student_id ?? a.id)
     )
     alumnosDisponibles.value = data
       .filter(u => u.roles?.includes('alumno') && !yaInscritos.has(u.id))
@@ -654,10 +594,7 @@ async function abrirInscribirAlumno(inst) {
 async function inscribirAlumno(alumno) {
   inscribiendo.value = alumno.id
   try {
-    await api.post('/enrollments', {
-      student_id: alumno.id,
-      course_id: instanciaInscribir.value.id,
-    })
+    await api.post('/enrollments', { student_id: alumno.id, course_id: instanciaInscribir.value.id })
     alumnosDisponibles.value = alumnosDisponibles.value.filter(a => a.id !== alumno.id)
     await cargarAlumnos(instanciaInscribir.value)
     $q.notify({ type: 'positive', message: `${alumno.full_name} inscrito correctamente.`, position: 'top' })
@@ -669,20 +606,16 @@ async function inscribirAlumno(alumno) {
 }
 
 // ── Acciones: finalizar ───────────────────────────────────────────────
-
 function abrirFinalizar(inst) {
   instanciaAFinalizar.value = inst
-  motivoFinalizar.value = ''
-  dialogoFinalizar.value = true
+  motivoFinalizar.value     = ''
+  dialogoFinalizar.value    = true
 }
 
 async function confirmarFinalizar() {
   finalizando.value = true
   try {
-    await api.patch(`/courses/${instanciaAFinalizar.value.id}`, {
-      status: 'finished',
-      close_reason: motivoFinalizar.value.trim(),
-    })
+    await api.patch(`/courses/${instanciaAFinalizar.value.id}`, { status: 'finished', close_reason: motivoFinalizar.value.trim() })
     instanciaAFinalizar.value.status = 'finished'
     dialogoFinalizar.value = false
     $q.notify({ type: 'positive', message: 'Curso finalizado correctamente.', position: 'top' })
@@ -694,10 +627,7 @@ async function confirmarFinalizar() {
 }
 
 // ── Carga de datos ────────────────────────────────────────────────────
-
-function generateBatchId() {
-  return Math.random().toString(36).slice(2, 9)
-}
+function generateBatchId() { return Math.random().toString(36).slice(2, 9) }
 
 async function cargarAlumnos(inst, batchId = null) {
   inst.cargandoAlumnos = true
@@ -716,9 +646,7 @@ onMounted(async () => {
   cargando.value = true
   try {
     const batchId = generateBatchId()
-    const { data } = await api.get('/courses', {
-      headers: { 'X-Batch-Id': batchId },
-    })
+    const { data } = await api.get('/courses', { headers: { 'X-Batch-Id': batchId } })
     instancias.value = data.map(i => ({ ...i, alumnos: null, cargandoAlumnos: false }))
     await Promise.all(instancias.value.map(inst => cargarAlumnos(inst, batchId)))
   } catch {
@@ -730,7 +658,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* ── Selector Activos / Finalizados ── */
+/* ── Tabs ── */
 .seg-control {
   display: inline-flex;
   align-items: center;
@@ -757,10 +685,7 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-.seg-btn--active {
-  background: #13224A;
-  color: white;
-}
+.seg-btn--active { background: #13224A; color: white; }
 
 .seg-count {
   font-size: 11px;
@@ -772,120 +697,152 @@ onMounted(async () => {
   transition: background 0.2s ease;
 }
 
-.seg-btn--active .seg-count {
-  background: rgba(255,255,255,0.2);
+.seg-btn--active .seg-count { background: rgba(255,255,255,0.2); }
+
+/* ── Hero card ── */
+.hero-card {
+  background: #13224A;
+  border-radius: 18px;
+  padding: 26px 30px 22px;
+  margin-bottom: 18px;
+  transition: opacity 0.2s;
 }
 
-/* ── Layout dos paneles ── */
-.dos-paneles {
+.hero-card--dimmed { opacity: 0.52; }
+
+.hero-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #E3A96E;
+  margin-bottom: 10px;
+}
+
+.hero-top {
   display: flex;
-  background: white;
-  border-radius: 14px;
-  border: 1px solid #E7E9EE;
-  overflow: hidden;
-  min-height: 420px;
-}
-
-/* ── Panel izquierdo ── */
-.panel-izq {
-  width: 290px;
-  flex-shrink: 0;
-  border-right: 1px solid #E7E9EE;
-  overflow-y: auto;
-}
-
-.plantilla-item {
-  display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 14px 16px;
-  cursor: pointer;
-  border-bottom: 1px solid #F0F2F5;
-  border-left: 3px solid transparent;
-  transition: background 0.15s;
-  gap: 8px;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
-.plantilla-item:last-child { border-bottom: none; }
-.plantilla-item:hover { background: #F4F7FC; }
-
-.plantilla-item--activa {
-  background: #F4F7FC;
-  border-left-color: #13224A;
+.hero-nombre {
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  line-height: 1.2;
+  margin-bottom: 5px;
 }
 
-.plantilla-nombre {
+.hero-meta {
   font-size: 14px;
-  font-weight: 500;
-  color: #13224A;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: rgba(255,255,255,0.6);
+}
+
+.hero-alumnos-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  border-radius: 20px;
+  padding: 3px 10px 3px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
   white-space: nowrap;
 }
+.hero-alumnos-btn:hover {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
 
-.plantilla-badge {
+.hero-edit-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.65);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
-  border-radius: 11px;
-  background: #E7E9EE;
-  color: #13224A;
-  font-size: 12px;
-  font-weight: 700;
+  cursor: pointer;
   flex-shrink: 0;
+  transition: background 0.15s;
 }
+.hero-edit-btn:hover { background: rgba(255,255,255,0.1); }
 
-/* ── Panel derecho ── */
-.panel-der {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-}
-
-.panel-der-header {
+.hero-acciones {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid #E7E9EE;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.panel-der-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: #13224A;
-  display: flex;
+.hero-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  gap: 5px;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
 }
 
-/* ── Encabezados de sección (Mis clases / Otras clases) ── */
-.seccion-label {
+.hero-btn-meet {
+  background: #4A9D69;
+  color: white;
+}
+.hero-btn-meet:hover { background: #3A8859; }
+
+.hero-btn-disabled {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.35);
+  cursor: not-allowed;
+}
+
+.hero-btn-accion {
+  background: rgba(255,255,255,0.12);
+  color: white;
+}
+.hero-btn-accion:hover { background: rgba(255,255,255,0.2); }
+
+.hero-editando-chip {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.85);
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+/* ── Label de sección ── */
+.otras-clases-label {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   color: #9AA0AB;
-  padding: 8px 4px 4px;
+  padding: 4px 0 8px;
 }
 
-/* ── Lista de cards de cursos ── */
+/* ── Lista de cards ── */
 .cursos-lista {
-  padding: 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.cursos-lista--standalone {
-  padding: 0;
+  margin-bottom: 16px;
 }
 
 .curso-card {
@@ -910,26 +867,16 @@ onMounted(async () => {
   transition: background 0.12s;
   border-radius: 6px;
 }
+.curso-bloque-ver:hover { background: #F4F7FC; }
 
-.curso-bloque-ver:hover {
-  background: #F4F7FC;
-}
-
-/* Franja de estado */
-.curso-stripe {
-  width: 4px;
-  align-self: stretch;
-  flex-shrink: 0;
-}
-
-.stripe-activo    { background: #27AE60; }
-.stripe-finalizado { background: #CBD5E1; }
+/* Franjas de estado */
+.curso-stripe        { width: 4px; align-self: stretch; flex-shrink: 0; }
+.stripe-activo       { background: #4A9D69; }
+.stripe-propia       { background: #4A6EA8; }
+.stripe-finalizado   { background: #CBD5E1; }
 
 /* Bloques de info */
-.curso-bloque {
-  padding: 18px 16px;
-  min-width: 0;
-}
+.curso-bloque { padding: 18px 16px; min-width: 0; }
 
 .curso-bloque-nombre {
   flex: 0 1 auto;
@@ -946,11 +893,7 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-.curso-meta {
-  font-size: 12px;
-  color: #9AA0AB;
-  margin-top: 2px;
-}
+.curso-meta { font-size: 12px; color: #9AA0AB; margin-top: 2px; }
 
 .curso-bloque-label {
   font-size: 10.5px;
@@ -968,9 +911,7 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-.curso-bloque-alumnos {
-  min-width: 80px;
-}
+.curso-bloque-alumnos { min-width: 80px; }
 
 /* Acciones */
 .curso-acciones {
@@ -990,54 +931,58 @@ onMounted(async () => {
   height: 32px !important;
 }
 
-.curso-btn-accion {
-  background: #F0F4FA !important;
-  color: #13224A !important;
-}
+.curso-btn-accion        { background: #F0F4FA !important; color: #13224A !important; }
+.curso-btn-accion:hover  { background: #E2E9F5 !important; }
+.curso-btn-neutro        { background: #F5F5F5 !important; color: #64748B !important; }
+.curso-btn-peligro       { background: #FEF2F1 !important; color: #C0392B !important; }
+.curso-btn-peligro:hover { background: #FCDAD7 !important; }
+.curso-btn-meet          { background: #E8F5E9 !important; color: #1E7E34 !important; }
+.curso-btn-meet:hover    { background: #C8E6C9 !important; }
+.curso-btn-meet-disabled { background: #F5F5F5 !important; color: #BDBDBD !important; cursor: not-allowed !important; }
 
-.curso-btn-accion:hover {
-  background: #E2E9F5 !important;
-}
-
-.curso-btn-neutro {
-  background: #F5F5F5 !important;
-  color: #64748B !important;
-}
-
-.curso-btn-peligro {
-  background: #FEF2F1 !important;
-  color: #C0392B !important;
-}
-
-.curso-btn-peligro:hover {
-  background: #FCDAD7 !important;
-}
-
-.curso-btn-meet {
-  background: #E8F5E9 !important;
-  color: #1E7E34 !important;
-}
-
-.curso-btn-meet:hover {
-  background: #C8E6C9 !important;
-}
-
-.curso-btn-meet-disabled {
-  background: #F5F5F5 !important;
-  color: #BDBDBD !important;
-  cursor: not-allowed !important;
-}
-
-/* ── Resaltado mientras el modal está abierto ── */
+/* ── Resaltado modal activo ── */
 .curso-card--editando {
   border-color: #8E9EBB !important;
   background: #E0E6F2 !important;
   box-shadow: 0 2px 12px rgba(19, 34, 74, 0.14) !important;
 }
 
-.curso-card--dimmed {
-  opacity: 0.52;
-  transition: opacity 0.2s;
+.curso-card--dimmed { opacity: 0.52; transition: opacity 0.2s; }
+
+/* ── Paginación ── */
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 0 4px;
+}
+
+.pag-btn {
+  border: 1px solid #E2E8F0;
+  background: white;
+  border-radius: 7px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #13224A;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pag-btn:hover:not(:disabled) {
+  background: #F0F4FA;
+  border-color: #C5CCD8;
+}
+.pag-btn--dis {
+  color: #CBD5E1;
+  cursor: default;
+}
+
+.pag-info {
+  font-size: 13px;
+  color: #6B7280;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .editando-chip {
