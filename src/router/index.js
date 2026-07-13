@@ -82,6 +82,18 @@ const routes = [
         component: () => import('../views/CalendarioView.vue'),
         meta: { roles: ['administrador', 'profesor'] },
       },
+      {
+        path: 'archivos',
+        name: 'Archivos',
+        component: () => import('../views/ArchivosView.vue'),
+        meta: { roles: ['administrador', 'profesor'] },
+      },
+      {
+        path: 'archivos/:id',
+        name: 'ArchivosDocumentos',
+        component: () => import('../views/ArchivosView.vue'),
+        meta: { roles: ['administrador', 'profesor'] },
+      },
     ],
   },
   {

@@ -180,6 +180,22 @@
           <template v-if="auth.hasRole('administrador') || auth.hasRole('profesor')">
             <q-item
               clickable v-ripple
+              :to="{ name: 'Archivos' }"
+              class="sidebar-item"
+              :class="{ 'sidebar-item-active': isArchivosActive }"
+              @click="cerrarDrawerMobile"
+            >
+              <i class="ti ti-folder"
+                :style="`font-size: 22px; color: ${isArchivosActive ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
+              <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
+                Archivos
+              </q-tooltip>
+            </q-item>
+          </template>
+
+          <template v-if="auth.hasRole('administrador') || auth.hasRole('profesor')">
+            <q-item
+              clickable v-ripple
               :to="{ name: 'AdminUsuarios' }"
               class="sidebar-item"
               :class="{ 'sidebar-item-active': isActive('AdminUsuarios') }"
@@ -408,6 +424,10 @@ const isProfesorActive = computed(() =>
   isActive('PasarAsistencia') ||
   isActive('RegistrarNotas') ||
   isActive('ProfesorHistorial')
+)
+
+const isArchivosActive = computed(() =>
+  isActive('Archivos') || isActive('ArchivosDocumentos')
 )
 
 // ── Helpers ───────────────────────────────────────────────
