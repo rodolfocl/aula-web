@@ -88,12 +88,6 @@ const routes = [
         component: () => import('../views/ArchivosView.vue'),
         meta: { roles: ['administrador', 'profesor'] },
       },
-      {
-        path: 'archivos/:id',
-        name: 'ArchivosDocumentos',
-        component: () => import('../views/ArchivosView.vue'),
-        meta: { roles: ['administrador', 'profesor'] },
-      },
     ],
   },
   {

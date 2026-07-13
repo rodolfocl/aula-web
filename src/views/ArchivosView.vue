@@ -1,228 +1,244 @@
 <template>
   <q-page style="background: #F7F8FA; min-height: 100vh;">
+    <div style="padding: 28px 24px 0; max-width: 1040px; margin: 0 auto;">
 
-    <!-- ── LISTADO DE CARPETAS ──────────────────────────────── -->
-    <template v-if="!cursoSeleccionado">
-      <div style="padding: 28px 24px 0; max-width: 860px; margin: 0 auto;">
-        <div style="margin-bottom: 24px;">
-          <div style="font-size: 20px; font-weight: 700; color: #0D1B3E;">Archivos por clase</div>
-          <div style="font-size: 13px; color: #64748B; margin-top: 4px;">
-            Selecciona una clase para ver y gestionar sus documentos.
-          </div>
-        </div>
-
-        <div v-if="cargandoCursos" class="row justify-center q-mt-xl">
-          <q-spinner color="primary" size="36px" />
-        </div>
-
-        <div v-else-if="errorCursos" class="estado-vacio">
-          <i class="ti ti-alert-circle" style="font-size: 32px; color: #C0392B;" />
-          <div>{{ errorCursos }}</div>
-          <q-btn flat label="Reintentar" color="primary" @click="cargarCursos" />
-        </div>
-
-        <div v-else-if="cursos.length === 0" class="estado-vacio">
-          <i class="ti ti-folder-open" style="font-size: 48px; color: #CBD5E1;" />
-          <div style="color: #94A3B8;">No tienes clases asignadas.</div>
-        </div>
-
-        <div v-else class="carpetas-list">
-          <div
-            v-for="curso in cursos"
-            :key="curso.id"
-            class="carpeta-card"
-            :class="{ 'carpeta-card--clickable': !!curso.drive_folder_id }"
-            @click="curso.drive_folder_id && seleccionarCurso(curso)"
+      <!-- ── HEADER: BREADCRUMB + ACCIONES ─────────────────── -->
+      <div class="explorer-header">
+        <div class="breadcrumb-nav">
+          <q-btn
+            v-if="breadcrumb.length > 0"
+            flat round dense
+            class="btn-volver"
+            @click="navegarA(parentFolderId)"
           >
-            <div
-              class="carpeta-icono"
-              :class="curso.drive_folder_id ? 'carpeta-icono--activo' : 'carpeta-icono--inactivo'"
-            >
-              <i
-                :class="curso.drive_folder_id ? 'ti ti-folder' : 'ti ti-folder-off'"
-                :style="`font-size: 22px; color: ${curso.drive_folder_id ? '#C9A96E' : '#94A3B8'};`"
-              />
-            </div>
+            <i class="ti ti-arrow-left" style="font-size: 18px; color: #0D1B3E;" />
+            <q-tooltip class="pdv-tooltip">Volver</q-tooltip>
+          </q-btn>
+          <span class="breadcrumb-link" @click="navegarA(null)">
+            <i class="ti ti-folders" style="font-size: 15px; vertical-align: middle; margin-right: 4px;" />
+            Archivos
+          </span>
+          <template v-for="(seg, idx) in breadcrumb" :key="seg.id">
+            <i class="ti ti-chevron-right" style="font-size: 12px; color: #CBD5E1; margin: 0 4px;" />
+            <span
+              v-if="idx < breadcrumb.length - 1"
+              class="breadcrumb-link"
+              @click="navegarA(seg.id)"
+            >{{ seg.name }}</span>
+            <span v-else class="breadcrumb-actual">{{ seg.name }}</span>
+          </template>
+        </div>
 
-            <div class="carpeta-info">
-              <div class="carpeta-nombre">{{ curso.course_name }}</div>
-              <div class="carpeta-meta">
-                {{ curso.teacher_name }} · {{ curso.year }}
-                <span v-if="curso.period"> · {{ curso.period }}</span>
-              </div>
-              <div v-if="!curso.drive_folder_id" style="font-size: 12px; color: #E67E22; margin-top: 2px;">
-                Sin carpeta en Drive
-              </div>
-            </div>
-
-            <template v-if="curso.drive_folder_id">
-              <i class="ti ti-chevron-right" style="font-size: 18px; color: #CBD5E1; flex-shrink: 0;" />
-            </template>
-            <template v-else>
-              <q-btn
-                unelevated
-                label="Crear carpeta"
-                style="background: #0D1B3E; color: #fff; border-radius: 8px; font-size: 13px; white-space: nowrap; flex-shrink: 0;"
-                :loading="creandoCarpetaId === curso.id"
-                @click.stop="crearCarpetaDesdeListado(curso)"
-              />
-            </template>
-          </div>
+        <div class="acciones-header">
+          <q-btn
+            unelevated
+            style="background: #0D1B3E; color: #fff; border-radius: 8px; font-size: 13px; height: 36px;"
+            @click="abrirDialogoNuevaCarpeta"
+          >
+            <i class="ti ti-folder-plus" style="font-size: 15px; margin-right: 6px;" />
+            Nueva carpeta
+          </q-btn>
         </div>
       </div>
-    </template>
 
-    <!-- ── GRID DE ARCHIVOS ────────────────────────────────── -->
-    <template v-else>
-      <div style="padding: 28px 24px 0; max-width: 1040px; margin: 0 auto;">
+      <!-- ── DROP ZONE ───────────────────────────────────────── -->
+      <div
+        class="drop-zone"
+        :class="{ 'drop-zone--activa': dragging }"
+        @dragover.prevent="dragging = true"
+        @dragleave.self="dragging = false"
+        @drop.prevent="onDrop"
+        @click="abrirSelectorArchivo"
+      >
+        <i class="ti ti-cloud-upload" style="font-size: 20px; color: #94A3B8;" />
+        <span style="font-size: 13px; color: #94A3B8;">Arrastra archivos aquí o haz clic para seleccionar</span>
+      </div>
+      <input ref="fileInputRef" type="file" multiple style="display: none;" @change="onArchivosSeleccionados" />
 
-        <!-- Breadcrumb -->
-        <div class="row items-center q-mb-md" style="gap: 8px;">
-          <span class="breadcrumb-link" @click="volverALista">← Archivos</span>
-          <span style="color: #CBD5E1; font-size: 13px;">/</span>
-          <span style="font-size: 13px; font-weight: 600; color: #0D1B3E;">
-            {{ cursoSeleccionado.course_name }}
-          </span>
+      <!-- ── PROGRESO SUBIDA ──────────────────────────────────── -->
+      <div v-if="subiendoArchivos" class="q-mb-lg">
+        <div style="font-size: 12px; color: #64748B; margin-bottom: 6px;">
+          Subiendo {{ nombreArchivoSubiendo }}…
+        </div>
+        <q-linear-progress :value="progresoSubida" color="primary" rounded style="height: 6px;" />
+      </div>
+
+      <!-- ── LOADING ─────────────────────────────────────────── -->
+      <div v-if="cargando" class="row justify-center q-mt-xl">
+        <q-spinner color="primary" size="36px" />
+      </div>
+
+      <!-- ── ERROR ───────────────────────────────────────────── -->
+      <div v-else-if="error" class="estado-vacio">
+        <i class="ti ti-alert-circle" style="font-size: 32px; color: #C0392B;" />
+        <div>{{ error }}</div>
+        <q-btn flat label="Reintentar" color="primary" @click="cargarContenido()" />
+      </div>
+
+      <template v-else>
+        <!-- ── VACÍO ─────────────────────────────────────────── -->
+        <div v-if="carpetas.length === 0 && archivos.length === 0" class="estado-vacio">
+          <i class="ti ti-folder-open" style="font-size: 48px; color: #CBD5E1;" />
+          <div style="color: #94A3B8;">Esta carpeta está vacía</div>
+          <div style="font-size: 12px; color: #CBD5E1;">Crea una subcarpeta o sube archivos para empezar</div>
         </div>
 
-        <!-- Header clase -->
-        <div class="row items-center justify-between q-mb-lg" style="flex-wrap: wrap; gap: 12px;">
-          <div>
-            <div style="font-size: 18px; font-weight: 700; color: #0D1B3E;">
-              {{ cursoSeleccionado.course_name }}
-            </div>
-            <div style="font-size: 12px; color: #64748B; margin-top: 2px;">
-              {{ cursoSeleccionado.teacher_name }} · {{ cursoSeleccionado.year }}
-            </div>
+        <!-- ── LISTADO ────────────────────────────────────────── -->
+        <div v-else class="items-list">
+
+          <!-- Cabecera de columnas -->
+          <div class="items-col-header">
+            <div style="flex: 1; padding-left: 44px;">Nombre</div>
+            <div class="col-size">Tamaño</div>
+            <div class="col-date">Modificado</div>
+            <div class="col-actions" />
           </div>
 
+          <!-- Carpetas -->
+          <template v-if="carpetas.length > 0">
+            <div class="items-section-label">Carpetas</div>
+            <div
+              v-for="carpeta in carpetas"
+              :key="carpeta.id"
+              class="item-row item-row--carpeta"
+              @click="navegarA(carpeta.id)"
+            >
+              <div class="item-icono-wrap">
+                <i class="ti ti-folder-filled" style="font-size: 22px; color: #C9A96E;" />
+              </div>
+              <div class="item-nombre-wrap">
+                <span class="item-nombre">{{ carpeta.name }}</span>
+              </div>
+              <div class="col-size">—</div>
+              <div class="col-date">{{ carpeta.modifiedTime ? formatearFecha(carpeta.modifiedTime) : '—' }}</div>
+              <div class="col-actions" @click.stop>
+                <q-btn flat round dense class="item-btn">
+                  <i class="ti ti-dots-vertical" style="font-size: 16px; color: #94A3B8;" />
+                  <q-menu auto-close>
+                    <q-list style="min-width: 160px; padding: 4px 0;">
+                      <q-item clickable v-ripple style="padding: 8px 16px;" @click="iniciarRenombre(carpeta)">
+                        <i class="ti ti-pencil" style="font-size: 15px; color: #64748B; margin-right: 10px;" />
+                        <span style="font-size: 13px; color: #0D1B3E;">Renombrar</span>
+                      </q-item>
+                      <q-item clickable v-ripple style="padding: 8px 16px;" @click="confirmarEliminar(carpeta, true)">
+                        <i class="ti ti-trash" style="font-size: 15px; color: #C0392B; margin-right: 10px;" />
+                        <span style="font-size: 13px; color: #C0392B;">Eliminar</span>
+                      </q-item>
+                    </q-list>
+                  </q-menu>
+                </q-btn>
+              </div>
+            </div>
+          </template>
+
+          <!-- Archivos -->
+          <template v-if="archivos.length > 0">
+            <div class="items-section-label">Archivos</div>
+            <div
+              v-for="archivo in archivos"
+              :key="archivo.id"
+              class="item-row"
+              @click="abrirPreview(archivo)"
+            >
+              <div class="item-icono-wrap">
+                <div class="item-icono-archivo" :style="`background: ${bgMime(archivo.mimeType)};`">
+                  <i
+                    :class="`ti ${iconoMimeTi(archivo.mimeType)}`"
+                    :style="`font-size: 16px; color: ${colorIconoMime(archivo.mimeType)};`"
+                  />
+                </div>
+              </div>
+              <div class="item-nombre-wrap">
+                <span class="item-nombre">{{ archivo.name }}</span>
+              </div>
+              <div class="col-size">{{ formatearTamaño(archivo.size) }}</div>
+              <div class="col-date">{{ archivo.modifiedTime ? formatearFecha(archivo.modifiedTime) : '—' }}</div>
+              <div class="col-actions" @click.stop>
+                <q-btn flat round dense class="item-btn" @click="descargarArchivo(archivo)">
+                  <i class="ti ti-download" style="font-size: 15px; color: #64748B;" />
+                  <q-tooltip class="pdv-tooltip">Descargar</q-tooltip>
+                </q-btn>
+                <q-btn flat round dense class="item-btn">
+                  <i class="ti ti-dots-vertical" style="font-size: 16px; color: #94A3B8;" />
+                  <q-menu auto-close>
+                    <q-list style="min-width: 160px; padding: 4px 0;">
+                      <q-item clickable v-ripple style="padding: 8px 16px;" @click="iniciarRenombre(archivo)">
+                        <i class="ti ti-pencil" style="font-size: 15px; color: #64748B; margin-right: 10px;" />
+                        <span style="font-size: 13px; color: #0D1B3E;">Renombrar</span>
+                      </q-item>
+                      <q-item clickable v-ripple style="padding: 8px 16px;" @click="confirmarEliminar(archivo, false)">
+                        <i class="ti ti-trash" style="font-size: 15px; color: #C0392B; margin-right: 10px;" />
+                        <span style="font-size: 13px; color: #C0392B;">Eliminar</span>
+                      </q-item>
+                    </q-list>
+                  </q-menu>
+                </q-btn>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+
+    <!-- ── DIÁLOGO NUEVA CARPETA ───────────────────────────── -->
+    <q-dialog v-model="dialogoNuevaCarpeta">
+      <q-card class="pdv-dialog" style="min-width: 340px;">
+        <div class="pdv-dialog-title">Nueva carpeta</div>
+        <div class="pdv-dialog-body">
+          <q-input
+            v-model="nombreNuevaCarpeta"
+            label="Nombre de la carpeta"
+            outlined
+            dense
+            autofocus
+            @keyup.enter="crearCarpeta"
+          />
+        </div>
+        <div class="pdv-dialog-actions">
+          <q-btn flat label="Cancelar" class="pdv-btn-cancel" @click="dialogoNuevaCarpeta = false" />
           <q-btn
-            v-if="!cursoSeleccionado.drive_folder_id"
             unelevated
-            label="Crear carpeta"
-            style="background: #C9A96E; color: #fff; border-radius: 8px; font-size: 13px;"
+            label="Crear"
+            class="pdv-btn-save"
             :loading="creandoCarpeta"
+            :disable="!nombreNuevaCarpeta.trim()"
             @click="crearCarpeta"
           />
         </div>
+      </q-card>
+    </q-dialog>
 
-        <!-- Sin carpeta -->
-        <div v-if="!cursoSeleccionado.drive_folder_id" class="estado-vacio">
-          <i class="ti ti-folder-off" style="font-size: 48px; color: #CBD5E1;" />
-          <div style="color: #94A3B8; text-align: center;">
-            Esta clase aún no tiene carpeta en Google Drive.<br>
-            Haz clic en "Crear carpeta" para inicializarla.
-          </div>
+    <!-- ── DIÁLOGO RENOMBRAR ────────────────────────────────── -->
+    <q-dialog v-model="dialogoRenombre">
+      <q-card class="pdv-dialog" style="min-width: 340px;">
+        <div class="pdv-dialog-title">Renombrar</div>
+        <div class="pdv-dialog-body">
+          <q-input
+            v-model="nuevoNombre"
+            label="Nuevo nombre"
+            outlined
+            dense
+            autofocus
+            @keyup.enter="ejecutarRenombre"
+          />
         </div>
-
-        <template v-else>
-          <!-- Drop zone -->
-          <div
-            class="drop-zone"
-            :class="{ 'drop-zone--activa': dragging }"
-            @dragover.prevent="dragging = true"
-            @dragleave="dragging = false"
-            @drop.prevent="onDrop"
-            @click="abrirSelectorArchivo"
-          >
-            <i class="ti ti-cloud-upload" style="font-size: 24px; color: #94A3B8;" />
-            <span style="font-size: 13px; color: #94A3B8;">
-              Arrastra archivos aquí o haz clic para seleccionar
-            </span>
-          </div>
-
-          <input ref="fileInputRef" type="file" multiple style="display: none;" @change="onArchivosSeleccionados" />
-
-          <!-- Progreso subida -->
-          <div v-if="subiendoArchivos" class="q-mb-md">
-            <div style="font-size: 12px; color: #64748B; margin-bottom: 6px;">
-              Subiendo {{ nombreArchivoSubiendo }}…
-            </div>
-            <q-linear-progress :value="progresoSubida" color="primary" rounded style="height: 6px;" />
-          </div>
-
-          <div v-if="cargandoArchivos" class="row justify-center q-mt-lg">
-            <q-spinner color="primary" size="32px" />
-          </div>
-
-          <div v-else-if="errorArchivos" class="estado-vacio">
-            <i class="ti ti-alert-circle" style="font-size: 28px; color: #C0392B;" />
-            <div>{{ errorArchivos }}</div>
-            <q-btn flat label="Reintentar" color="primary" @click="cargarArchivos" />
-          </div>
-
-          <div v-else-if="archivos.length === 0" class="estado-vacio" style="margin-top: 12px;">
-            <i class="ti ti-files-off" style="font-size: 40px; color: #CBD5E1;" />
-            <div style="color: #94A3B8;">Aún no hay archivos en esta carpeta.</div>
-          </div>
-
-          <!-- GRID -->
-          <div v-else class="archivos-grid">
-            <div v-for="archivo in archivos" :key="archivo.id" class="archivo-card">
-              <!-- Área de miniatura -->
-              <div class="archivo-thumbnail" @click="abrirPreview(archivo)">
-                <img
-                  v-if="archivo.thumbnailLink && !thumbnailErrors.has(archivo.id)"
-                  :src="archivo.thumbnailLink"
-                  :alt="archivo.name"
-                  class="archivo-thumb-img"
-                  @error="onThumbnailError(archivo.id)"
-                />
-                <div
-                  v-else
-                  class="archivo-thumb-fallback"
-                  :style="`background: ${bgMime(archivo.mimeType)};`"
-                >
-                  <i
-                    :class="`ti ${iconoMimeTi(archivo.mimeType)}`"
-                    :style="`font-size: 44px; color: ${colorIconoMime(archivo.mimeType)};`"
-                  />
-                </div>
-                <span v-if="badgeMime(archivo.mimeType)" class="archivo-badge">
-                  {{ badgeMime(archivo.mimeType) }}
-                </span>
-              </div>
-
-              <!-- Cuerpo card -->
-              <div class="archivo-body">
-                <div class="archivo-nombre" :title="archivo.name">{{ archivo.name }}</div>
-                <div class="archivo-meta">
-                  {{ formatearTamaño(archivo.size) }}
-                  <span v-if="archivo.modifiedTime"> · {{ formatearFecha(archivo.modifiedTime) }}</span>
-                </div>
-
-                <div class="archivo-acciones">
-                  <q-btn
-                    unelevated
-                    label="Abrir"
-                    class="archivo-btn-abrir"
-                    @click="abrirPreview(archivo)"
-                  />
-                  <q-btn flat round dense class="archivo-btn-icono" @click="descargarArchivo(archivo)">
-                    <i class="ti ti-download" style="font-size: 16px; color: #0D1B3E;" />
-                    <q-tooltip class="pdv-tooltip">Descargar</q-tooltip>
-                  </q-btn>
-                  <q-btn
-                    v-if="puedeEliminar"
-                    flat round dense
-                    class="archivo-btn-icono archivo-btn-icono--rojo"
-                    @click="confirmarEliminar(archivo)"
-                  >
-                    <i class="ti ti-trash" style="font-size: 16px; color: #C0392B;" />
-                    <q-tooltip class="pdv-tooltip">Eliminar</q-tooltip>
-                  </q-btn>
-                </div>
-              </div>
-            </div>
-          </div>
-        </template>
-      </div>
-    </template>
+        <div class="pdv-dialog-actions">
+          <q-btn flat label="Cancelar" class="pdv-btn-cancel" @click="dialogoRenombre = false" />
+          <q-btn
+            unelevated
+            label="Guardar"
+            class="pdv-btn-save"
+            :loading="renombrando"
+            :disable="!nuevoNombre.trim()"
+            @click="ejecutarRenombre"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
 
     <!-- ── MODAL PREVIEW ────────────────────────────────────── -->
     <q-dialog v-model="previewAbierto" @hide="previewError = false">
       <div class="preview-modal">
-        <!-- Header -->
         <div class="preview-header">
           <span class="preview-titulo">{{ archivoPreview?.name }}</span>
           <div class="row items-center" style="gap: 8px; flex-shrink: 0;">
@@ -234,11 +250,7 @@
               :href="archivoPreview?.webViewLink"
               target="_blank"
             />
-            <q-btn
-              flat
-              class="preview-btn-secundario"
-              @click="archivoPreview && descargarArchivo(archivoPreview)"
-            >
+            <q-btn flat class="preview-btn-secundario" @click="archivoPreview && descargarArchivo(archivoPreview)">
               <i class="ti ti-download" style="font-size: 15px; margin-right: 4px;" />
               Descargar
             </q-btn>
@@ -247,8 +259,6 @@
             </q-btn>
           </div>
         </div>
-
-        <!-- Iframe preview -->
         <div v-if="!previewError" class="preview-content">
           <iframe
             v-if="archivoPreview"
@@ -258,13 +268,9 @@
             @error="previewError = true"
           />
         </div>
-
-        <!-- Fallback -->
         <div v-else class="preview-fallback">
           <i class="ti ti-file-alert" style="font-size: 48px; color: #CBD5E1;" />
-          <div style="color: #64748B; text-align: center; font-size: 14px;">
-            No se puede previsualizar este archivo
-          </div>
+          <div style="color: #64748B; text-align: center; font-size: 14px;">No se puede previsualizar este archivo</div>
           <div class="row" style="gap: 8px; margin-top: 8px;">
             <q-btn
               unelevated
@@ -284,7 +290,6 @@
         </div>
       </div>
     </q-dialog>
-
   </q-page>
 </template>
 
@@ -292,63 +297,70 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-import { useAuthStore } from '../stores/authStore'
 import api from '../services/api'
 
 const $q     = useQuasar()
-const auth   = useAuthStore()
 const route  = useRoute()
 const router = useRouter()
 
-const esAdmin    = computed(() => auth.hasRole('administrador'))
-const esProfesor = computed(() => auth.hasRole('profesor'))
-const puedeEliminar = computed(() => esAdmin.value || esProfesor.value)
+// ── Estado del explorador ─────────────────────────────────
+const currentFolderId = ref(null)
+const parentFolderId  = computed(() => {
+  if (breadcrumb.value.length === 0) return null
+  if (breadcrumb.value.length === 1) return null
+  return breadcrumb.value[breadcrumb.value.length - 2].id
+})
+const breadcrumb      = ref([])
+const carpetas        = ref([])
+const archivos        = ref([])
+const cargando        = ref(false)
+const error           = ref('')
 
-// ── Lista de cursos ───────────────────────────────────────
-const cursos             = ref([])
-const cargandoCursos     = ref(false)
-const errorCursos        = ref('')
-const cursoSeleccionado  = ref(null)
-
-async function cargarCursos() {
-  cargandoCursos.value = true
-  errorCursos.value = ''
+async function cargarContenido(folderId = currentFolderId.value) {
+  cargando.value = true
+  error.value = ''
   try {
-    const { data } = await api.get('/courses', { params: { status: 'active' } })
-    cursos.value = data
-  } catch {
-    errorCursos.value = 'No se pudieron cargar las clases. Intenta de nuevo.'
+    const params = folderId ? { folderId } : {}
+    const { data } = await api.get('/drive/browse', { params })
+    currentFolderId.value = data.currentFolderId ?? folderId
+    breadcrumb.value      = data.breadcrumb ?? []
+    carpetas.value        = data.folders ?? []
+    archivos.value        = data.files ?? []
+  } catch (err) {
+    error.value = err.response?.data?.error || 'No se pudo cargar el contenido. Intenta de nuevo.'
   } finally {
-    cargandoCursos.value = false
+    cargando.value = false
   }
 }
 
-function seleccionarCurso(curso) {
-  cursoSeleccionado.value = { ...curso }
-  router.replace({ name: 'ArchivosDocumentos', params: { id: curso.id } })
-  cargarArchivos()
+function navegarA(folderId) {
+  currentFolderId.value = folderId
+  const query = folderId ? { folderId } : {}
+  router.replace({ name: 'Archivos', query })
+  cargarContenido(folderId)
 }
 
-function volverALista() {
-  cursoSeleccionado.value = null
-  archivos.value = []
-  errorArchivos.value = ''
-  thumbnailErrors.value = new Set()
-  router.replace({ name: 'Archivos' })
-}
+// ── Nueva carpeta ─────────────────────────────────────────
+const dialogoNuevaCarpeta = ref(false)
+const nombreNuevaCarpeta  = ref('')
+const creandoCarpeta      = ref(false)
 
-// ── Crear carpeta (desde detalle) ─────────────────────────
-const creandoCarpeta = ref(false)
+function abrirDialogoNuevaCarpeta() {
+  nombreNuevaCarpeta.value = ''
+  dialogoNuevaCarpeta.value = true
+}
 
 async function crearCarpeta() {
+  if (!nombreNuevaCarpeta.value.trim()) return
   creandoCarpeta.value = true
   try {
-    const { data } = await api.post(`/courses/${cursoSeleccionado.value.id}/documents/folder`)
-    cursoSeleccionado.value = { ...cursoSeleccionado.value, drive_folder_id: data.drive_folder_id }
-    const idx = cursos.value.findIndex(c => c.id === cursoSeleccionado.value.id)
-    if (idx !== -1) cursos.value[idx].drive_folder_id = data.drive_folder_id
-    $q.notify({ type: 'positive', message: 'Carpeta creada en Google Drive.', position: 'top' })
-    await cargarArchivos()
+    await api.post('/drive/folders', {
+      parentId: currentFolderId.value,
+      name: nombreNuevaCarpeta.value.trim(),
+    })
+    dialogoNuevaCarpeta.value = false
+    $q.notify({ type: 'positive', message: 'Carpeta creada.', position: 'top' })
+    await cargarContenido()
   } catch (err) {
     const msg = err.response?.data?.error || 'No se pudo crear la carpeta.'
     $q.notify({ type: 'negative', message: msg, position: 'top' })
@@ -357,55 +369,7 @@ async function crearCarpeta() {
   }
 }
 
-// ── Crear carpeta (desde listado) ─────────────────────────
-const creandoCarpetaId = ref(null)
-
-async function crearCarpetaDesdeListado(curso) {
-  creandoCarpetaId.value = curso.id
-  try {
-    const { data } = await api.post(`/courses/${curso.id}/documents/folder`)
-    const idx = cursos.value.findIndex(c => c.id === curso.id)
-    if (idx !== -1) cursos.value[idx].drive_folder_id = data.drive_folder_id
-    $q.notify({ type: 'positive', message: 'Carpeta creada. Accediendo…', position: 'top' })
-    seleccionarCurso({ ...cursos.value[idx] })
-  } catch (err) {
-    const msg = err.response?.data?.error || 'No se pudo crear la carpeta.'
-    $q.notify({ type: 'negative', message: msg, position: 'top' })
-  } finally {
-    creandoCarpetaId.value = null
-  }
-}
-
-// ── Archivos ──────────────────────────────────────────────
-const archivos         = ref([])
-const cargandoArchivos = ref(false)
-const errorArchivos    = ref('')
-
-async function cargarArchivos() {
-  if (!cursoSeleccionado.value) return
-  cargandoArchivos.value = true
-  errorArchivos.value = ''
-  try {
-    const { data } = await api.get(`/courses/${cursoSeleccionado.value.id}/documents`)
-    archivos.value = data.files ?? []
-    if (data.drive_folder_id && !cursoSeleccionado.value.drive_folder_id) {
-      cursoSeleccionado.value = { ...cursoSeleccionado.value, drive_folder_id: data.drive_folder_id }
-    }
-  } catch (err) {
-    errorArchivos.value = err.response?.data?.error || 'No se pudieron cargar los archivos.'
-  } finally {
-    cargandoArchivos.value = false
-  }
-}
-
-// ── Thumbnails ────────────────────────────────────────────
-const thumbnailErrors = ref(new Set())
-
-function onThumbnailError(id) {
-  thumbnailErrors.value = new Set([...thumbnailErrors.value, id])
-}
-
-// ── Subida ────────────────────────────────────────────────
+// ── Subida de archivos ────────────────────────────────────
 const fileInputRef          = ref(null)
 const dragging              = ref(false)
 const subiendoArchivos      = ref(false)
@@ -433,6 +397,7 @@ async function onDrop(event) {
 async function subirArchivos(files) {
   subiendoArchivos.value = true
   progresoSubida.value = 0
+  const folderId = currentFolderId.value ?? 'root'
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i]
@@ -443,7 +408,7 @@ async function subirArchivos(files) {
     form.append('file', file)
 
     try {
-      await api.post(`/courses/${cursoSeleccionado.value.id}/documents`, form, {
+      await api.post(`/drive/folders/${folderId}/files`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 0,
         onUploadProgress: (e) => {
@@ -460,27 +425,16 @@ async function subirArchivos(files) {
   progresoSubida.value = 1
   subiendoArchivos.value = false
   $q.notify({ type: 'positive', message: 'Archivos subidos correctamente.', position: 'top' })
-  await cargarArchivos()
-}
-
-// ── Preview ───────────────────────────────────────────────
-const previewAbierto  = ref(false)
-const archivoPreview  = ref(null)
-const previewError    = ref(false)
-
-function abrirPreview(archivo) {
-  archivoPreview.value = archivo
-  previewError.value   = false
-  previewAbierto.value = true
+  await cargarContenido()
 }
 
 // ── Descarga ──────────────────────────────────────────────
 async function descargarArchivo(archivo) {
   try {
-    const response = await api.get(
-      `/courses/${cursoSeleccionado.value.id}/documents/${archivo.id}/download`,
-      { responseType: 'blob', timeout: 0 }
-    )
+    const response = await api.get(`/drive/files/${archivo.id}/download`, {
+      responseType: 'blob',
+      timeout: 0,
+    })
     const url = URL.createObjectURL(response.data)
     const a = document.createElement('a')
     a.href = url
@@ -492,26 +446,71 @@ async function descargarArchivo(archivo) {
   }
 }
 
+// ── Renombrar ─────────────────────────────────────────────
+const dialogoRenombre = ref(false)
+const nuevoNombre     = ref('')
+const renombrando     = ref(false)
+const itemEnEdicion   = ref(null)
+
+function iniciarRenombre(item) {
+  itemEnEdicion.value  = item
+  nuevoNombre.value    = item.name
+  dialogoRenombre.value = true
+}
+
+async function ejecutarRenombre() {
+  if (!nuevoNombre.value.trim() || !itemEnEdicion.value) return
+  renombrando.value = true
+  try {
+    await api.patch(`/drive/items/${itemEnEdicion.value.id}`, { name: nuevoNombre.value.trim() })
+    dialogoRenombre.value = false
+    $q.notify({ type: 'positive', message: 'Renombrado correctamente.', position: 'top' })
+    await cargarContenido()
+  } catch (err) {
+    const msg = err.response?.data?.error || 'No se pudo renombrar.'
+    $q.notify({ type: 'negative', message: msg, position: 'top' })
+  } finally {
+    renombrando.value = false
+  }
+}
+
 // ── Eliminar ──────────────────────────────────────────────
-function confirmarEliminar(archivo) {
+function confirmarEliminar(item, esCarpeta) {
   $q.dialog({
-    title: 'Eliminar archivo',
-    message: `¿Eliminar "${archivo.name}"? Esta acción no se puede deshacer.`,
+    title: esCarpeta ? 'Eliminar carpeta' : 'Eliminar archivo',
+    message: esCarpeta
+      ? `¿Eliminar la carpeta "${item.name}" y todo su contenido? Esta acción no se puede deshacer.`
+      : `¿Eliminar "${item.name}"? Esta acción no se puede deshacer.`,
     cancel: { flat: true, label: 'Cancelar', color: 'grey-7' },
     ok: { unelevated: true, label: 'Eliminar', color: 'negative' },
     persistent: true,
   }).onOk(async () => {
     try {
-      await api.delete(`/courses/${cursoSeleccionado.value.id}/documents/${archivo.id}`)
-      archivos.value = archivos.value.filter(a => a.id !== archivo.id)
-      $q.notify({ type: 'positive', message: 'Archivo eliminado.', position: 'top' })
+      await api.delete(`/drive/items/${item.id}`)
+      if (esCarpeta) {
+        carpetas.value = carpetas.value.filter(c => c.id !== item.id)
+      } else {
+        archivos.value = archivos.value.filter(a => a.id !== item.id)
+      }
+      $q.notify({ type: 'positive', message: 'Eliminado correctamente.', position: 'top' })
     } catch {
-      $q.notify({ type: 'negative', message: 'No se pudo eliminar el archivo.', position: 'top' })
+      $q.notify({ type: 'negative', message: 'No se pudo eliminar.', position: 'top' })
     }
   })
 }
 
-// ── Helpers de tipo MIME ──────────────────────────────────
+// ── Preview ───────────────────────────────────────────────
+const previewAbierto = ref(false)
+const archivoPreview = ref(null)
+const previewError   = ref(false)
+
+function abrirPreview(archivo) {
+  archivoPreview.value = archivo
+  previewError.value   = false
+  previewAbierto.value = true
+}
+
+// ── Helpers MIME ──────────────────────────────────────────
 function iconoMimeTi(mime) {
   if (!mime) return 'ti-file'
   if (mime.startsWith('image/')) return 'ti-photo'
@@ -549,17 +548,6 @@ function bgMime(mime) {
   return '#F1F5F9'
 }
 
-function badgeMime(mime) {
-  if (!mime) return ''
-  if (mime.includes('pdf')) return 'PDF'
-  if (mime.includes('spreadsheet') || mime.includes('excel')) return 'XLS'
-  if (mime.includes('presentation') || mime.includes('powerpoint')) return 'PPT'
-  if (mime.includes('document') || mime.includes('word')) return 'DOC'
-  if (mime.includes('csv')) return 'CSV'
-  if (mime.includes('zip')) return 'ZIP'
-  return ''
-}
-
 function formatearTamaño(bytes) {
   if (!bytes) return '—'
   const n = Number(bytes)
@@ -574,222 +562,73 @@ function formatearFecha(iso) {
 }
 
 // ── Inicialización ────────────────────────────────────────
-onMounted(async () => {
-  await cargarCursos()
-  const idParam = route.params.id
-  if (idParam) {
-    const found = cursos.value.find(c => String(c.id) === String(idParam))
-    if (found) seleccionarCurso(found)
-  }
+onMounted(() => {
+  const folderId = route.query.folderId ?? null
+  currentFolderId.value = folderId
+  cargarContenido(folderId)
 })
 </script>
 
 <style scoped>
-/* ── CARPETAS ─────────────────────────────────────────── */
-.carpetas-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-bottom: 40px;
-}
-
-.carpeta-card {
+/* ── HEADER ──────────────────────────────────────────── */
+.explorer-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px 18px;
-  border: 1px solid #E7E9EE;
-  transition: box-shadow 0.15s, border-color 0.15s;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.carpeta-card--clickable {
-  cursor: pointer;
-}
-
-.carpeta-card--clickable:hover {
-  border-color: #C9A96E;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-}
-
-.carpeta-icono {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+.breadcrumb-nav {
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-.carpeta-icono--activo {
-  background: rgba(201, 169, 110, 0.12);
-}
-
-.carpeta-icono--inactivo {
-  background: #F1F5F9;
-}
-
-.carpeta-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.carpeta-nombre {
-  font-size: 15px;
-  font-weight: 600;
-  color: #0D1B3E;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.carpeta-meta {
-  font-size: 13px;
-  color: #64748B;
-  margin-top: 2px;
-}
-
-/* ── GRID DE ARCHIVOS ────────────────────────────────── */
-.archivos-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  padding-bottom: 40px;
-}
-
-@media (max-width: 768px) {
-  .archivos-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (min-width: 769px) and (max-width: 1024px) {
-  .archivos-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.archivo-card {
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #E7E9EE;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow 0.15s, border-color 0.15s;
-}
-
-.archivo-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-  border-color: #D1D5DB;
-}
-
-.archivo-thumbnail {
-  position: relative;
-  height: 160px;
-  cursor: pointer;
-  overflow: hidden;
-  background: #F7F8FA;
-}
-
-.archivo-thumb-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.archivo-thumb-fallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.archivo-badge {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background: #C0392B;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  padding: 2px 7px;
-  border-radius: 5px;
-}
-
-.archivo-body {
-  padding: 12px 14px 14px;
-  display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 2px;
-  flex: 1;
+  font-size: 14px;
 }
 
-.archivo-nombre {
-  font-size: 13px;
-  font-weight: 600;
+.btn-volver {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.btn-volver:hover {
+  background: #E7E9EE !important;
+}
+
+.breadcrumb-link {
+  color: #64748B;
+  cursor: pointer;
+  transition: color 0.12s;
+  font-weight: 500;
+}
+
+.breadcrumb-link:hover {
   color: #0D1B3E;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.archivo-meta {
-  font-size: 11px;
-  color: #94A3B8;
-  margin-bottom: 10px;
+.breadcrumb-actual {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0D1B3E;
 }
 
-.archivo-acciones {
+.acciones-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: auto;
-}
-
-.archivo-btn-abrir {
-  flex: 1;
-  background: #F1F5F9 !important;
-  color: #0D1B3E !important;
-  border-radius: 8px !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
-  height: 34px !important;
-  min-height: 34px !important;
-}
-
-.archivo-btn-abrir:hover {
-  background: #E2E8F0 !important;
-}
-
-.archivo-btn-icono {
-  width: 34px !important;
-  height: 34px !important;
-  border-radius: 8px !important;
-  background: #F1F5F9 !important;
-}
-
-.archivo-btn-icono:hover {
-  background: #E2E8F0 !important;
-}
-
-.archivo-btn-icono--rojo {
-  background: #FEE2E2 !important;
-}
-
-.archivo-btn-icono--rojo:hover {
-  background: #FECACA !important;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 /* ── DROP ZONE ───────────────────────────────────────── */
 .drop-zone {
   border: 2px dashed #E7E9EE;
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -804,6 +643,130 @@ onMounted(async () => {
 .drop-zone--activa {
   border-color: #C9A96E;
   background: #FFFBF3;
+}
+
+/* ── LISTADO ─────────────────────────────────────────── */
+.items-list {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #E7E9EE;
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+
+.items-col-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #F1F5F9;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.items-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 16px 4px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.items-section-label:first-child {
+  border-top: none;
+}
+
+.item-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #F7F8FA;
+  transition: background 0.12s;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.item-row:last-child {
+  border-bottom: none;
+}
+
+.item-row--carpeta {
+  cursor: pointer;
+}
+
+.item-row:hover {
+  background: #F7F8FA;
+}
+
+.item-icono-wrap {
+  flex-shrink: 0;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-icono-archivo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-nombre-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-nombre {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0D1B3E;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.col-size {
+  width: 100px;
+  text-align: right;
+  font-size: 12px;
+  color: #94A3B8;
+  flex-shrink: 0;
+}
+
+.col-date {
+  width: 130px;
+  text-align: right;
+  font-size: 12px;
+  color: #94A3B8;
+  flex-shrink: 0;
+}
+
+.col-actions {
+  width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.item-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+}
+
+.item-btn:hover {
+  background: #F1F5F9 !important;
 }
 
 /* ── PREVIEW MODAL ───────────────────────────────────── */
@@ -866,26 +829,28 @@ onMounted(async () => {
   gap: 12px;
 }
 
-/* ── COMUNES ─────────────────────────────────────────── */
-.breadcrumb-link {
-  font-size: 13px;
-  color: #64748B;
-  cursor: pointer;
-  transition: color 0.12s;
-}
-
-.breadcrumb-link:hover {
-  color: #0D1B3E;
-}
-
+/* ── ESTADO VACÍO ────────────────────────────────────── */
 .estado-vacio {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 48px 0;
+  padding: 64px 0;
   font-size: 14px;
   color: #94A3B8;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────── */
+@media (max-width: 600px) {
+  .col-size,
+  .col-date,
+  .items-col-header {
+    display: none;
+  }
+  .acciones-header {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 </style>
 

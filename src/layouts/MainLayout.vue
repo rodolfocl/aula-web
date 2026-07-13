@@ -426,9 +426,7 @@ const isProfesorActive = computed(() =>
   isActive('ProfesorHistorial')
 )
 
-const isArchivosActive = computed(() =>
-  isActive('Archivos') || isActive('ArchivosDocumentos')
-)
+const isArchivosActive = computed(() => isActive('Archivos'))
 
 // ── Helpers ───────────────────────────────────────────────
 function isActive(routeName) {
