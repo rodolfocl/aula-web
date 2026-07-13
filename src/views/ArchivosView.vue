@@ -1,6 +1,6 @@
 <template>
   <q-page style="background: #F7F8FA; min-height: 100vh;">
-    <div style="padding: 28px 24px 0; max-width: 1040px; margin: 0 auto;">
+    <div style="padding: 28px 24px 0;">
 
       <!-- ── HEADER: BREADCRUMB + ACCIONES ─────────────────── -->
       <div class="explorer-header">
@@ -398,6 +398,7 @@ async function subirArchivos(files) {
   subiendoArchivos.value = true
   progresoSubida.value = 0
   const folderId = currentFolderId.value ?? 'root'
+  let errores = 0
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i]
@@ -417,6 +418,7 @@ async function subirArchivos(files) {
         },
       })
     } catch (err) {
+      errores++
       const msg = err.response?.data?.error || `Error al subir "${file.name}".`
       $q.notify({ type: 'negative', message: msg, position: 'top' })
     }
@@ -424,7 +426,9 @@ async function subirArchivos(files) {
 
   progresoSubida.value = 1
   subiendoArchivos.value = false
-  $q.notify({ type: 'positive', message: 'Archivos subidos correctamente.', position: 'top' })
+  if (errores < files.length) {
+    $q.notify({ type: 'positive', message: 'Archivos subidos correctamente.', position: 'top' })
+  }
   await cargarContenido()
 }
 
@@ -688,6 +692,7 @@ onMounted(() => {
   transition: background 0.12s;
   gap: 12px;
   min-height: 52px;
+  cursor: pointer;
 }
 
 .item-row:last-child {
