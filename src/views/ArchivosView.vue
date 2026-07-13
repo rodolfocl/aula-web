@@ -98,7 +98,7 @@
           <template v-if="carpetas.length > 0">
             <div class="items-section-label">Carpetas</div>
             <div
-              v-for="carpeta in carpetas"
+              v-for="carpeta in carpetasPaginadas"
               :key="carpeta.id"
               class="item-row item-row--carpeta"
               @click="navegarA(carpeta.id)"
@@ -120,6 +120,10 @@
                         <i class="ti ti-pencil" style="font-size: 15px; color: #64748B; margin-right: 10px;" />
                         <span style="font-size: 13px; color: #0D1B3E;">Renombrar</span>
                       </q-item>
+                      <q-item clickable v-ripple style="padding: 8px 16px;" @click="abrirDialogoMover(carpeta)">
+                        <i class="ti ti-folder-symlink" style="font-size: 15px; color: #64748B; margin-right: 10px;" />
+                        <span style="font-size: 13px; color: #0D1B3E;">Mover a…</span>
+                      </q-item>
                       <q-item clickable v-ripple style="padding: 8px 16px;" @click="confirmarEliminar(carpeta, true)">
                         <i class="ti ti-trash" style="font-size: 15px; color: #C0392B; margin-right: 10px;" />
                         <span style="font-size: 13px; color: #C0392B;">Eliminar</span>
@@ -129,13 +133,23 @@
                 </q-btn>
               </div>
             </div>
+            <div v-if="totalPaginasCarpetas > 1" class="paginacion-wrap">
+              <q-pagination
+                v-model="paginaCarpetas"
+                :max="totalPaginasCarpetas"
+                :max-pages="6"
+                boundary-numbers
+                color="grey-7"
+                size="sm"
+              />
+            </div>
           </template>
 
           <!-- Archivos -->
           <template v-if="archivos.length > 0">
             <div class="items-section-label">Archivos</div>
             <div
-              v-for="archivo in archivos"
+              v-for="archivo in archivosPaginados"
               :key="archivo.id"
               class="item-row"
               @click="abrirPreview(archivo)"
@@ -166,6 +180,10 @@
                         <i class="ti ti-pencil" style="font-size: 15px; color: #64748B; margin-right: 10px;" />
                         <span style="font-size: 13px; color: #0D1B3E;">Renombrar</span>
                       </q-item>
+                      <q-item clickable v-ripple style="padding: 8px 16px;" @click="abrirDialogoMover(archivo)">
+                        <i class="ti ti-folder-symlink" style="font-size: 15px; color: #64748B; margin-right: 10px;" />
+                        <span style="font-size: 13px; color: #0D1B3E;">Mover a…</span>
+                      </q-item>
                       <q-item clickable v-ripple style="padding: 8px 16px;" @click="confirmarEliminar(archivo, false)">
                         <i class="ti ti-trash" style="font-size: 15px; color: #C0392B; margin-right: 10px;" />
                         <span style="font-size: 13px; color: #C0392B;">Eliminar</span>
@@ -174,6 +192,16 @@
                   </q-menu>
                 </q-btn>
               </div>
+            </div>
+            <div v-if="totalPaginasArchivos > 1" class="paginacion-wrap">
+              <q-pagination
+                v-model="paginaArchivos"
+                :max="totalPaginasArchivos"
+                :max-pages="6"
+                boundary-numbers
+                color="grey-7"
+                size="sm"
+              />
             </div>
           </template>
         </div>
@@ -232,6 +260,69 @@
             :disable="!nuevoNombre.trim()"
             @click="ejecutarRenombre"
           />
+        </div>
+      </q-card>
+    </q-dialog>
+
+    <!-- ── DIÁLOGO MOVER ──────────────────────────────────── -->
+    <q-dialog v-model="dialogoMover" @hide="itemAMover = null">
+      <q-card class="pdv-dialog" style="min-width: 440px; max-width: 540px;">
+        <div class="pdv-dialog-title" style="padding-bottom: 0;">
+          Mover "{{ itemAMover?.name }}"
+        </div>
+
+        <!-- Breadcrumb del picker -->
+        <div class="move-picker-breadcrumb">
+          <span class="move-picker-link" @click="cargarNavMover(null)">
+            <i class="ti ti-folders" style="font-size: 13px; vertical-align: middle; margin-right: 3px;" />
+            Archivos
+          </span>
+          <template v-for="(seg, idx) in moveNavBreadcrumb" :key="seg.id">
+            <i class="ti ti-chevron-right" style="font-size: 11px; color: #CBD5E1; margin: 0 3px;" />
+            <span
+              v-if="idx < moveNavBreadcrumb.length - 1"
+              class="move-picker-link"
+              @click="cargarNavMover(seg.id)"
+            >{{ seg.name }}</span>
+            <span v-else class="move-picker-link move-picker-link--actual">{{ seg.name }}</span>
+          </template>
+        </div>
+
+        <!-- Lista de carpetas navegables -->
+        <div class="move-picker-lista">
+          <div v-if="moveNavCargando" class="row justify-center q-pa-lg">
+            <q-spinner color="primary" size="24px" />
+          </div>
+          <div v-else-if="moveNavCarpetas.length === 0" class="move-picker-vacio">
+            <i class="ti ti-folder-open" style="font-size: 26px; color: #CBD5E1;" />
+            <span>Sin subcarpetas</span>
+          </div>
+          <template v-else>
+            <div
+              v-for="carpeta in moveNavCarpetas"
+              :key="carpeta.id"
+              class="move-picker-item"
+              @click="cargarNavMover(carpeta.id)"
+            >
+              <i class="ti ti-folder-filled" style="font-size: 18px; color: #C9A96E; flex-shrink: 0;" />
+              <span class="move-picker-nombre">{{ carpeta.name }}</span>
+              <i class="ti ti-chevron-right" style="font-size: 13px; color: #CBD5E1; flex-shrink: 0;" />
+            </div>
+          </template>
+        </div>
+
+        <div class="pdv-dialog-actions">
+          <q-btn flat label="Cancelar" class="pdv-btn-cancel" @click="dialogoMover = false" />
+          <q-btn
+            unelevated
+            class="pdv-btn-save"
+            :loading="moviendoItem"
+            :disable="moveEsMismaUbicacion"
+            @click="ejecutarMover"
+          >
+            <i class="ti ti-folder-symlink" style="font-size: 14px; margin-right: 6px;" />
+            Mover aquí
+          </q-btn>
         </div>
       </q-card>
     </q-dialog>
@@ -303,6 +394,24 @@ const $q     = useQuasar()
 const route  = useRoute()
 const router = useRouter()
 
+// ── Paginación ────────────────────────────────────────────
+const POR_PAGINA = 10
+const paginaCarpetas = ref(1)
+const paginaArchivos = ref(1)
+
+const carpetasPaginadas = computed(() => {
+  const start = (paginaCarpetas.value - 1) * POR_PAGINA
+  return carpetas.value.slice(start, start + POR_PAGINA)
+})
+
+const archivosPaginados = computed(() => {
+  const start = (paginaArchivos.value - 1) * POR_PAGINA
+  return archivos.value.slice(start, start + POR_PAGINA)
+})
+
+const totalPaginasCarpetas = computed(() => Math.ceil(carpetas.value.length / POR_PAGINA))
+const totalPaginasArchivos = computed(() => Math.ceil(archivos.value.length / POR_PAGINA))
+
 // ── Estado del explorador ─────────────────────────────────
 const currentFolderId = ref(null)
 const parentFolderId  = computed(() => {
@@ -326,6 +435,8 @@ async function cargarContenido(folderId = currentFolderId.value) {
     breadcrumb.value      = data.breadcrumb ?? []
     carpetas.value        = data.folders ?? []
     archivos.value        = data.files ?? []
+    paginaCarpetas.value  = 1
+    paginaArchivos.value  = 1
   } catch (err) {
     error.value = err.response?.data?.error || 'No se pudo cargar el contenido. Intenta de nuevo.'
   } finally {
@@ -501,6 +612,65 @@ function confirmarEliminar(item, esCarpeta) {
       $q.notify({ type: 'negative', message: 'No se pudo eliminar.', position: 'top' })
     }
   })
+}
+
+// ── Mover ────────────────────────────────────────────────
+const dialogoMover     = ref(false)
+const itemAMover       = ref(null)
+const moveNavFolderId  = ref(null)
+const moveNavBreadcrumb = ref([])
+const moveNavCarpetas  = ref([])
+const moveNavCargando  = ref(false)
+const moviendoItem     = ref(false)
+
+const moveEsMismaUbicacion = computed(() => moveNavFolderId.value === currentFolderId.value)
+
+async function abrirDialogoMover(item) {
+  itemAMover.value      = item
+  moveNavFolderId.value = null
+  moveNavBreadcrumb.value = []
+  moveNavCarpetas.value = []
+  dialogoMover.value    = true
+  await cargarNavMover(null)
+}
+
+async function cargarNavMover(folderId) {
+  moveNavCargando.value = true
+  try {
+    const params = folderId ? { folderId } : {}
+    const { data } = await api.get('/drive/browse', { params })
+    moveNavFolderId.value   = data.currentFolderId ?? folderId
+    moveNavBreadcrumb.value = data.breadcrumb ?? []
+    moveNavCarpetas.value   = (data.folders ?? []).filter(f => f.id !== itemAMover.value?.id)
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo cargar las carpetas.', position: 'top' })
+  } finally {
+    moveNavCargando.value = false
+  }
+}
+
+async function ejecutarMover() {
+  if (!itemAMover.value || !moveNavFolderId.value || moveEsMismaUbicacion.value) return
+  moviendoItem.value = true
+  try {
+    await api.patch(`/drive/items/${itemAMover.value.id}/move`, { newParentId: moveNavFolderId.value })
+    const destino = moveNavBreadcrumb.value.length > 0
+      ? moveNavBreadcrumb.value.at(-1).name
+      : 'Archivos'
+    const esCarpeta = itemAMover.value.mimeType === 'application/vnd.google-apps.folder'
+    if (esCarpeta) {
+      carpetas.value = carpetas.value.filter(c => c.id !== itemAMover.value.id)
+    } else {
+      archivos.value = archivos.value.filter(a => a.id !== itemAMover.value.id)
+    }
+    dialogoMover.value = false
+    $q.notify({ type: 'positive', message: `Movido a "${destino}".`, position: 'top' })
+  } catch (err) {
+    const msg = err.response?.data?.error || 'No se pudo mover el elemento.'
+    $q.notify({ type: 'negative', message: msg, position: 'top' })
+  } finally {
+    moviendoItem.value = false
+  }
 }
 
 // ── Preview ───────────────────────────────────────────────
@@ -832,6 +1002,97 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 12px;
+}
+
+/* ── PAGINACIÓN ──────────────────────────────────────── */
+.paginacion-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 8px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.paginacion-wrap :deep(.q-btn--active .q-btn__content) {
+  color: #fff;
+}
+
+.paginacion-wrap :deep(.q-btn--active) {
+  background: #0D1B3E !important;
+}
+
+/* ── DIÁLOGO MOVER ───────────────────────────────────── */
+.move-picker-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 10px 20px 8px;
+  font-size: 12px;
+  background: #F7F8FA;
+  border-top: 1px solid #E7E9EE;
+  border-bottom: 1px solid #E7E9EE;
+}
+
+.move-picker-link {
+  color: #64748B;
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.12s;
+}
+
+.move-picker-link:hover {
+  color: #0D1B3E;
+}
+
+.move-picker-link--actual {
+  color: #0D1B3E;
+  font-weight: 600;
+  cursor: default;
+}
+
+.move-picker-lista {
+  min-height: 180px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.move-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 20px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid #F7F8FA;
+  font-size: 14px;
+  color: #0D1B3E;
+  font-weight: 500;
+}
+
+.move-picker-item:last-child {
+  border-bottom: none;
+}
+
+.move-picker-item:hover {
+  background: #F7F8FA;
+}
+
+.move-picker-nombre {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.move-picker-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 0;
+  font-size: 13px;
+  color: #94A3B8;
 }
 
 /* ── ESTADO VACÍO ────────────────────────────────────── */
