@@ -16,7 +16,7 @@
         <!-- Logo -->
         <q-toolbar-title shrink style="min-width: 0; padding: 0 12px 0 4px;">
           <img :src="logoImg" alt="Aula PDV"
-            style="height: 46px; width: auto; object-fit: contain; display: block;" />
+            style="height: 52px; width: auto; object-fit: contain; display: block;" />
         </q-toolbar-title>
 
         <q-space />
@@ -389,7 +389,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from '../stores/authStore'
 import api from '../services/api'
-import logoImg from '../assets/logo-principal-azul.png'
+import logoImg from '../assets/logo-apilado-azul.png'
 
 const router = useRouter()
 const route  = useRoute()

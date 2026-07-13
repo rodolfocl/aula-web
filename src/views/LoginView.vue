@@ -139,7 +139,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from '../stores/authStore'
 import authService from '../services/auth'
-import logoCrema from '../assets/logo-principal-crema.png'
+import logoCrema from '../assets/logo-apilado-crema.png'
 import espiga from '../assets/espiga.png'
 import nombreCrema from '../assets/nombre-crema.png'
 
@@ -219,9 +219,9 @@ async function iniciarSesion() {
 }
 
 .auth-logo {
-  height: 70px;
+  height: 220px;
+  width: auto;
   object-fit: contain;
-  object-position: left center;
 }
 
 .auth-left-text {
