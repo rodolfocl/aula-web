@@ -57,8 +57,12 @@
 
       <!-- ── PROGRESO SUBIDA ──────────────────────────────────── -->
       <div v-if="subiendoArchivos" class="q-mb-lg">
-        <div style="font-size: 12px; color: #64748B; margin-bottom: 6px;">
-          Subiendo {{ nombreArchivoSubiendo }}…
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+          <span style="font-size: 12px; color: #64748B;">Subiendo {{ nombreArchivoSubiendo }}…</span>
+          <q-btn flat round dense @click="cancelarSubida" style="width: 24px; height: 24px; min-height: unset;">
+            <i class="ti ti-x" style="font-size: 14px; color: #94A3B8;" />
+            <q-tooltip class="pdv-tooltip">Cancelar subida</q-tooltip>
+          </q-btn>
         </div>
         <q-linear-progress :value="progresoSubida" color="primary" rounded style="height: 6px;" />
       </div>
@@ -103,8 +107,12 @@
               class="item-row item-row--carpeta"
               @click="navegarA(carpeta.id)"
             >
-              <div class="item-icono-wrap">
+              <div class="item-icono-wrap" style="position: relative;">
                 <i class="ti ti-folder-filled" style="font-size: 22px; color: #C9A96E;" />
+                <i
+                  v-if="carpeta.starred"
+                  class="ti ti-star-filled item-star-badge"
+                />
               </div>
               <div class="item-nombre-wrap">
                 <span class="item-nombre">{{ carpeta.name }}</span>
@@ -116,6 +124,13 @@
                   <i class="ti ti-dots-vertical" style="font-size: 16px; color: #94A3B8;" />
                   <q-menu auto-close>
                     <q-list style="min-width: 160px; padding: 4px 0;">
+                      <q-item clickable v-ripple style="padding: 8px 16px;" @click="toggleStar(carpeta)">
+                        <i
+                          :class="`ti ${carpeta.starred ? 'ti-star-off' : 'ti-star'}`"
+                          style="font-size: 15px; color: #C9A96E; margin-right: 10px;"
+                        />
+                        <span style="font-size: 13px; color: #0D1B3E;">{{ carpeta.starred ? 'Quitar destacado' : 'Destacar' }}</span>
+                      </q-item>
                       <q-item clickable v-ripple style="padding: 8px 16px;" @click="iniciarRenombre(carpeta)">
                         <i class="ti ti-pencil" style="font-size: 15px; color: #64748B; margin-right: 10px;" />
                         <span style="font-size: 13px; color: #0D1B3E;">Renombrar</span>
@@ -154,13 +169,17 @@
               class="item-row"
               @click="abrirPreview(archivo)"
             >
-              <div class="item-icono-wrap">
+              <div class="item-icono-wrap" style="position: relative;">
                 <div class="item-icono-archivo" :style="`background: ${bgMime(archivo.mimeType)};`">
                   <i
                     :class="`ti ${iconoMimeTi(archivo.mimeType)}`"
                     :style="`font-size: 16px; color: ${colorIconoMime(archivo.mimeType)};`"
                   />
                 </div>
+                <i
+                  v-if="archivo.starred"
+                  class="ti ti-star-filled item-star-badge"
+                />
               </div>
               <div class="item-nombre-wrap">
                 <span class="item-nombre">{{ archivo.name }}</span>
@@ -176,6 +195,13 @@
                   <i class="ti ti-dots-vertical" style="font-size: 16px; color: #94A3B8;" />
                   <q-menu auto-close>
                     <q-list style="min-width: 160px; padding: 4px 0;">
+                      <q-item clickable v-ripple style="padding: 8px 16px;" @click="toggleStar(archivo)">
+                        <i
+                          :class="`ti ${archivo.starred ? 'ti-star-off' : 'ti-star'}`"
+                          style="font-size: 15px; color: #C9A96E; margin-right: 10px;"
+                        />
+                        <span style="font-size: 13px; color: #0D1B3E;">{{ archivo.starred ? 'Quitar destacado' : 'Destacar' }}</span>
+                      </q-item>
                       <q-item clickable v-ripple style="padding: 8px 16px;" @click="iniciarRenombre(archivo)">
                         <i class="ti ti-pencil" style="font-size: 15px; color: #64748B; margin-right: 10px;" />
                         <span style="font-size: 13px; color: #0D1B3E;">Renombrar</span>
@@ -486,6 +512,7 @@ const dragging              = ref(false)
 const subiendoArchivos      = ref(false)
 const progresoSubida        = ref(0)
 const nombreArchivoSubiendo = ref('')
+let uploadAbortController   = null
 
 function abrirSelectorArchivo() {
   fileInputRef.value?.click()
@@ -505,11 +532,24 @@ async function onDrop(event) {
   await subirArchivos(files)
 }
 
+function cancelarSubida() {
+  $q.dialog({
+    title: 'Cancelar subida',
+    message: `¿Cancelar la subida de "${nombreArchivoSubiendo.value}"? El archivo no se guardará.`,
+    cancel: { flat: true, label: 'Continuar subiendo', color: 'grey-7' },
+    ok: { unelevated: true, label: 'Cancelar subida', color: 'negative' },
+    persistent: true,
+  }).onOk(() => {
+    uploadAbortController?.abort()
+  })
+}
+
 async function subirArchivos(files) {
   subiendoArchivos.value = true
   progresoSubida.value = 0
   const folderId = currentFolderId.value ?? 'root'
   let errores = 0
+  let cancelado = false
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i]
@@ -518,26 +558,36 @@ async function subirArchivos(files) {
 
     const form = new FormData()
     form.append('file', file)
+    uploadAbortController = new AbortController()
 
     try {
       await api.post(`/drive/folders/${folderId}/files`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 0,
+        signal: uploadAbortController.signal,
         onUploadProgress: (e) => {
           const chunk = e.progress ?? 0
           progresoSubida.value = i / files.length + chunk / files.length
         },
       })
     } catch (err) {
+      if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') {
+        cancelado = true
+        break
+      }
       errores++
       const msg = err.response?.data?.error || `Error al subir "${file.name}".`
       $q.notify({ type: 'negative', message: msg, position: 'top' })
     }
   }
 
+  uploadAbortController = null
   progresoSubida.value = 1
   subiendoArchivos.value = false
-  if (errores < files.length) {
+
+  if (cancelado) {
+    $q.notify({ type: 'warning', message: 'Subida cancelada.', position: 'top' })
+  } else if (errores < files.length) {
     $q.notify({ type: 'positive', message: 'Archivos subidos correctamente.', position: 'top' })
   }
   await cargarContenido()
@@ -673,6 +723,28 @@ async function ejecutarMover() {
   }
 }
 
+// ── Destacar ──────────────────────────────────────────────
+async function toggleStar(item) {
+  const nuevoEstado = !item.starred
+  try {
+    const { data } = await api.patch(`/drive/items/${item.id}/star`, { starred: nuevoEstado })
+    const esCarpeta = item.mimeType === 'application/vnd.google-apps.folder'
+    const lista = esCarpeta ? carpetas : archivos
+    const idx = lista.value.findIndex(i => i.id === item.id)
+    if (idx !== -1) lista.value[idx] = { ...lista.value[idx], starred: data.starred }
+    lista.value = [...lista.value].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0) || a.name.localeCompare(b.name, 'es'))
+    if (esCarpeta) paginaCarpetas.value = 1
+    else paginaArchivos.value = 1
+    $q.notify({
+      type: 'positive',
+      message: nuevoEstado ? `"${item.name}" destacado.` : `"${item.name}" quitado de destacados.`,
+      position: 'top',
+    })
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo cambiar el estado de destacado.', position: 'top' })
+  }
+}
+
 // ── Preview ───────────────────────────────────────────────
 const previewAbierto = ref(false)
 const archivoPreview = ref(null)
@@ -802,15 +874,17 @@ onMounted(() => {
 .drop-zone {
   border: 2px dashed #E7E9EE;
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 0 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
-  margin-bottom: 20px;
+  margin: 0 auto 20px;
   background: #fff;
+  max-width: 860px;
+  height: 80px;
 }
 
 .drop-zone:hover,
@@ -892,6 +966,17 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.item-star-badge {
+  position: absolute;
+  bottom: -3px;
+  right: -4px;
+  font-size: 11px;
+  color: #C9A96E;
+  background: #fff;
+  border-radius: 50%;
+  line-height: 1;
 }
 
 .item-nombre-wrap {
