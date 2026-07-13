@@ -16,6 +16,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('user', JSON.stringify(userData))
   }
 
+  function updateToken(newToken) {
+    token.value = newToken
+    localStorage.setItem('token', newToken)
+  }
+
   function updateUser(partialData) {
     user.value = { ...user.value, ...partialData }
     localStorage.setItem('user', JSON.stringify(user.value))
@@ -28,5 +33,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('user')
   }
 
-  return { token, user, isAuthenticated, userRoles, hasRole, login, updateUser, logout }
+  return { token, user, isAuthenticated, userRoles, hasRole, login, updateToken, updateUser, logout }
 })

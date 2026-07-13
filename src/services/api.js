@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { Notify } from 'quasar'
 import router from '../router'
 import { useAuthStore } from '../stores/authStore'
 
@@ -20,12 +21,28 @@ api.interceptors.request.use((config) => {
 })
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const renewedToken = response.headers['x-renewed-token']
+    if (renewedToken) {
+      const auth = useAuthStore()
+      auth.updateToken(renewedToken)
+    }
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
       const auth = useAuthStore()
+      const wasAuthenticated = auth.isAuthenticated
       auth.logout()
       router.push({ name: 'Login' })
+      if (wasAuthenticated) {
+        Notify.create({
+          type: 'warning',
+          message: 'Tu sesión expiró por inactividad. Vuelve a iniciar sesión.',
+          position: 'top',
+          timeout: 5000,
+        })
+      }
     }
     return Promise.reject(error)
   }
