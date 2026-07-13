@@ -199,7 +199,7 @@
               :class="{ 'sidebar-item-active': isActive('AdminCursos') }"
               @click="cerrarDrawerMobile"
             >
-              <i class="ti ti-template"
+              <i class="ti ti-books"
                 :style="`font-size: 22px; color: ${isActive('AdminCursos') ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
               <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
                 Plantilla de Cursos
