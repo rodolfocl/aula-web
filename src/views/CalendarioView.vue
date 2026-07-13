@@ -55,21 +55,53 @@ const $q = useQuasar()
 const showDialog = ref(false)
 const evento     = ref(null)
 
+// Paleta suave de marca para pills (usada cuando el evento no trae color propio)
+const PILL_PALETTE = [
+  { bg: 'rgba(46, 125, 50, 0.12)',   text: '#1B5E20' },
+  { bg: 'rgba(11, 24, 53, 0.10)',    text: '#0B1835' },
+  { bg: 'rgba(201, 169, 110, 0.22)', text: '#7A5A10' },
+  { bg: 'rgba(230, 126, 34, 0.15)',  text: '#B7600A' },
+  { bg: 'rgba(192, 57, 43, 0.12)',   text: '#A0291B' },
+]
+
+// Asignación secuencial: primera clave vista → índice 0 (verde), segunda → 1 (navy), etc.
+// Así el orden de la paleta se respeta según el orden de aparición de los cursos/plantillas.
+const _colorMap = new Map()
+
+function pillColors(event) {
+  const bg = event.backgroundColor
+  const isDefaultFC = !bg || bg === '#3788d8' || bg === '#3b86ff'
+  const key = isDefaultFC
+    ? (event.extendedProps?.courseName || event.title || '')
+    : bg
+
+  if (!_colorMap.has(key)) {
+    _colorMap.set(key, _colorMap.size % PILL_PALETTE.length)
+  }
+  return PILL_PALETTE[_colorMap.get(key)]
+}
+
+// Extrae HH:MM del Date de inicio del evento
+function fmtTime(date) {
+  if (!date) return ''
+  return date.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
 const calendarOptions = {
   plugins:     [dayGridPlugin, timeGridPlugin, listPlugin],
   locale:      esLocale,
-  // Vista por defecto: lista en mobile (< 600px), grilla mensual en desktop
   initialView: window.innerWidth < 600 ? 'listMonth' : 'dayGridMonth',
   headerToolbar: {
     left:   'prev,next today',
     center: 'title',
     right:  'dayGridMonth,timeGridWeek,timeGridDay,listMonth',
   },
-  dayMaxEvents: true,
-  height:       'auto',
-  firstDay:     1, // Lunes primero
+  dayMaxEvents:    3,       // muestra hasta 3 pills; el resto → "+N más"
+  moreLinkClick:   'timeGridDay', // "+N más" abre la vista Día para esa fecha
+  height:          'auto',
+  firstDay:        1,
+  displayEventTime: false,  // desactiva el tiempo nativo de FC (lo mostramos en el pill)
 
-  // FullCalendar llama esto cada vez que cambia el rango visible
   events: async (info, successCallback, failureCallback) => {
     try {
       const { data } = await api.get('/calendar/events', {
@@ -85,6 +117,20 @@ const calendarOptions = {
     }
   },
 
+  // Renderizado personalizado del pill — evita la hora duplicada
+  eventContent(arg) {
+    const event  = arg.event
+    const time   = fmtTime(event.start)
+    const name   = event.extendedProps?.courseName || event.title || ''
+    const colors = pillColors(event)
+    return {
+      html: `<div class="cal-pill" style="background:${colors.bg};color:${colors.text};">` +
+            `<span class="cal-pill-time">${time}</span>` +
+            `<span class="cal-pill-name">${name}</span>` +
+            `</div>`,
+    }
+  },
+
   eventClick(info) {
     const p = info.event.extendedProps
     evento.value = {
@@ -97,7 +143,6 @@ const calendarOptions = {
     showDialog.value = true
   },
 
-  // En resize a mobile, forzar vista lista si estaba en grilla
   windowResize(arg) {
     if (window.innerWidth < 600 && !arg.view.type.startsWith('list')) {
       arg.view.calendar.changeView('listMonth')
@@ -128,39 +173,73 @@ const calendarOptions = {
 
 /* ── Variables de marca ────────────────────────────────── */
 .fc {
-  --fc-border-color:                 #E2E8F0;
-  --fc-today-bg-color:               rgba(201, 169, 110, 0.10);
-  --fc-button-bg-color:              #0B1835;
-  --fc-button-border-color:          #0B1835;
-  --fc-button-active-bg-color:       #C9A96E;
-  --fc-button-active-border-color:   #C9A96E;
-  --fc-button-hover-bg-color:        #1a2d5a;
-  --fc-button-hover-border-color:    #1a2d5a;
-  --fc-button-text-color:            #FFFFFF;
-  --fc-page-bg-color:                #FFFFFF;
-  --fc-neutral-bg-color:             #F8FAFC;
-  --fc-neutral-text-color:           #64748B;
-  --fc-list-event-hover-bg-color:    rgba(201, 169, 110, 0.08);
+  --fc-border-color:              #E2E8F0;
+  --fc-today-bg-color:            rgba(201, 169, 110, 0.10);
+  --fc-page-bg-color:             #FFFFFF;
+  --fc-neutral-bg-color:          #F8FAFC;
+  --fc-neutral-text-color:        #64748B;
+  --fc-list-event-hover-bg-color: rgba(201, 169, 110, 0.08);
   font-family: inherit;
 }
 
-/* ── Botones de navegación ─────────────────────────────── */
+/* ── Base común de todos los botones ───────────────────── */
 .fc .fc-button {
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  padding: 5px 12px;
+  padding: 6px 14px;
   text-transform: none;
   letter-spacing: 0;
-  box-shadow: none;
+  box-shadow: none !important;
+  transition: background 0.15s, color 0.15s;
 }
 
 .fc .fc-button:focus {
-  box-shadow: 0 0 0 2px rgba(201, 169, 110, 0.35);
+  box-shadow: 0 0 0 2px rgba(201, 169, 110, 0.35) !important;
 }
 
-.fc .fc-button-group {
-  gap: 2px;
+/* ── Botones de navegación (prev, next, today) ──────────
+   Fondo gris claro, texto navy — igual al mockup          */
+.fc .fc-prev-button,
+.fc .fc-next-button,
+.fc .fc-today-button {
+  background: #F1F5F9 !important;
+  border: none !important;
+  color: #0D1B3E !important;
+}
+
+.fc .fc-prev-button:hover,
+.fc .fc-next-button:hover,
+.fc .fc-today-button:hover {
+  background: #E2E8F0 !important;
+}
+
+/* ── Selector de vista (Mes / Semana / Día / Agenda) ────
+   Contenedor pill gris, botón activo navy, resto texto   */
+.fc .fc-toolbar-chunk:last-child .fc-button-group {
+  background: #F1F5F9;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 0;
+}
+
+.fc .fc-button-group .fc-button {
+  background: transparent !important;
+  border: none !important;
+  color: #64748B !important;
+  border-radius: 8px !important;
+  padding: 5px 14px !important;
+}
+
+.fc .fc-button-group .fc-button.fc-button-active {
+  background: #0D1B3E !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+}
+
+.fc .fc-button-group .fc-button:hover:not(.fc-button-active) {
+  background: #E2E8F0 !important;
+  color: #0D1B3E !important;
 }
 
 /* ── Título del mes ─────────────────────────────────────── */
@@ -204,25 +283,60 @@ const calendarOptions = {
   margin: 4px;
 }
 
-/* ── Chips de evento ────────────────────────────────────── */
+/* ── Pill de evento ─────────────────────────────────────── */
 .fc .fc-event {
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  border: none;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 1px 0;
   cursor: pointer;
-  padding: 1px 4px;
 }
 
-.fc .fc-event:hover {
-  filter: brightness(0.92);
+.fc .fc-event:hover .cal-pill {
+  filter: brightness(0.93);
 }
 
-/* ── "+N more" ──────────────────────────────────────────── */
+/* Elimina el punto de color que FC añade por defecto */
+.fc .fc-daygrid-event-dot {
+  display: none;
+}
+
+.cal-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 6px;
+  padding: 3px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cal-pill-time {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.cal-pill-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── "+N más" ───────────────────────────────────────────── */
 .fc .fc-daygrid-more-link {
   font-size: 11px;
-  color: #64748B;
-  font-weight: 600;
+  color: #C9A96E;
+  font-weight: 700;
+  padding: 2px 6px;
+}
+
+.fc .fc-daygrid-more-link:hover {
+  color: #8B6914;
+  text-decoration: underline;
 }
 
 /* ── Vista Lista ─────────────────────────────────────────── */
