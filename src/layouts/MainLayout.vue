@@ -389,7 +389,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from '../stores/authStore'
 import api from '../services/api'
-import logoImg from '../assets/logo-apilado-azul.png'
+import logoImg from '../assets/logo-principal-azul.png'
 
 const router = useRouter()
 const route  = useRoute()
