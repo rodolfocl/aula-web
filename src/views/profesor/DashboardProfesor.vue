@@ -68,10 +68,14 @@
                 </button>
               </div>
             </div>
-            <div @click.stop>
+            <div @click.stop style="display: flex; flex-direction: column; gap: 6px;">
               <button class="hero-edit-btn" @click.stop="abrirEditar(heroInst)">
                 <q-icon name="edit" size="14px" />
                 <q-tooltip class="pdv-tooltip">Editar curso</q-tooltip>
+              </button>
+              <button class="hero-edit-btn hero-finish-btn" @click.stop="abrirFinalizar(heroInst)">
+                <q-icon name="check_circle" size="14px" />
+                <q-tooltip class="pdv-tooltip">Terminar curso</q-tooltip>
               </button>
             </div>
           </div>
@@ -775,6 +779,7 @@ onMounted(async () => {
   transition: background 0.15s;
 }
 .hero-edit-btn:hover { background: rgba(255,255,255,0.1); }
+.hero-finish-btn:hover { background: rgba(192,57,43,0.25); color: #F1948A; border-color: rgba(192,57,43,0.4); }
 
 .hero-acciones {
   display: flex;

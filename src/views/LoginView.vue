@@ -270,17 +270,17 @@ async function iniciarSesion() {
 .auth-label {
   font-size: 12.5px;
   font-weight: 600;
-  color: #475569;
+  color: #0D1B3E;
   letter-spacing: 0.01em;
 }
 
-/* ── Input desktop: fondo crema ── */
+/* ── Input desktop ── */
 .auth-input :deep(.q-field__control) {
-  background: #FAF8F3;
+  background: white;
   border-radius: 8px !important;
 }
 .auth-input :deep(.q-field__control::before) {
-  border-color: #DDD5C8 !important;
+  border-color: #94A3B8 !important;
   border-radius: 8px !important;
 }
 .auth-input :deep(.q-field__control:hover::before) {
@@ -295,7 +295,7 @@ async function iniciarSesion() {
   font-size: 14px;
 }
 .auth-input :deep(.q-placeholder) {
-  color: #94A3B8;
+  color: #64748B;
 }
 
 /* ── Botón ── */
