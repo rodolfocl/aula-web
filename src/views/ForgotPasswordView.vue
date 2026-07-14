@@ -134,7 +134,7 @@
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
 import authService from '../services/auth'
-import logoCrema from '../assets/logo-apilado-crema.png'
+import logoCrema from '../assets/logo-horizontal-crema.png'
 import espiga from '../assets/espiga.png'
 import nombreCrema from '../assets/nombre-crema.png'
 

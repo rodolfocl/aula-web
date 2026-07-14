@@ -8,8 +8,9 @@
       <div class="auth-left-panel">
         <img :src="logoCrema" alt="Aula Pan de Vida" class="auth-logo" />
         <div class="auth-left-text">
-          Bienvenido de nuevo.<br />
-          Toma asistencia, califica y conéctate a tu clase.
+          “Lámpara es a mis pies tu palabra,<br />
+          y lumbrera a mi camino.”<br />
+          Salmo 119:105
         </div>
       </div>
 
@@ -139,7 +140,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from '../stores/authStore'
 import authService from '../services/auth'
-import logoCrema from '../assets/logo-apilado-crema.png'
+import logoCrema from '../assets/logo-horizontal-crema.png'
 import espiga from '../assets/espiga.png'
 import nombreCrema from '../assets/nombre-crema.png'
 
