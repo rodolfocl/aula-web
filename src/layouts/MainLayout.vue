@@ -47,23 +47,20 @@
               <!-- Header del menú -->
               <div class="user-menu-header">
                 <div style="min-width: 0; flex: 1;">
-                  <div style="display: flex; align-items: center; gap: 4px;">
-                    <span style="font-weight: 600; font-size: 14px; color: #0D1B3E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                      {{ auth.user?.full_name ?? auth.user?.nombre }}
-                    </span>
-                    <q-btn
-                      flat round dense size="xs"
-                      style="color: #94A3B8; width: 22px; height: 22px; flex-shrink: 0;"
-                      @click.stop="abrirEditarNombre"
-                    >
-                      <i class="ti ti-pencil" style="font-size: 13px;" />
-                      <q-tooltip class="pdv-tooltip" anchor="bottom middle" self="top middle">Editar nombre</q-tooltip>
-                    </q-btn>
+                  <div style="font-weight: 700; font-size: 15px; color: #13224A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    {{ auth.user?.full_name ?? auth.user?.nombre }}
                   </div>
-                  <div style="font-size: 12px; color: #64748B; text-transform: capitalize; margin-top: 2px;">
+                  <div style="font-size: 12px; color: #9AA0AB; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    {{ auth.user?.email }}
+                  </div>
+                  <div style="font-size: 12px; font-weight: 600; color: #C99A63; text-transform: capitalize; margin-top: 3px;">
                     {{ esAdmin ? 'Administrador' : (auth.userRoles.join(' · ') || '—') }}
                   </div>
                 </div>
+                <button class="umenu-edit-btn" @click.stop="abrirEditarPerfil">
+                  <i class="ti ti-pencil" style="font-size: 14px;" />
+                  <q-tooltip class="pdv-tooltip" anchor="bottom middle" self="top middle">Editar perfil</q-tooltip>
+                </button>
               </div>
 
               <q-separator style="border-color: #F1F5F9;" />
@@ -78,8 +75,14 @@
                 </q-item-section>
               </q-item>
 
-              <!-- Eliminar foto (solo si hay foto) -->
-              <q-item v-if="auth.user?.avatar" clickable v-ripple class="user-menu-item" @click="eliminarFoto">
+              <!-- Eliminar foto -->
+              <q-item
+                class="user-menu-item"
+                :clickable="!!auth.user?.avatar"
+                v-ripple
+                :style="!auth.user?.avatar ? 'opacity: 0.38; cursor: default; pointer-events: none;' : ''"
+                @click="auth.user?.avatar && eliminarFoto()"
+              >
                 <q-item-section avatar style="min-width: 36px;">
                   <q-icon name="hide_image" size="18px" color="grey-7" />
                 </q-item-section>
@@ -319,30 +322,40 @@
       </q-card>
     </q-dialog>
 
-    <!-- ── DIÁLOGO: Editar nombre ────────────────────────────── -->
-    <q-dialog v-model="dialogoEditarNombre" :maximized="$q.screen.lt.sm" @hide="resetEditarNombre">
-      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : 'min-width: 380px;'">
-        <div class="pdv-dialog-title">Editar nombre</div>
+    <!-- ── DIÁLOGO: Editar perfil ────────────────────────────── -->
+    <q-dialog v-model="dialogoEditarPerfil" :maximized="$q.screen.lt.sm" @hide="resetEditarPerfil">
+      <q-card class="pdv-dialog" :style="$q.screen.lt.sm ? 'border-radius: 0 !important; min-width: 100%;' : 'min-width: 400px;'">
+        <div class="pdv-dialog-title">Editar perfil</div>
         <div class="pdv-dialog-body">
           <q-input
-            v-model="formNombre"
+            v-model="formPerfil.nombre"
             label="Nombre completo"
             outlined dense
             autofocus
             maxlength="100"
-            :error="!!errorNombre"
-            :error-message="errorNombre"
-            :disable="guardandoNombre"
-            @keyup.enter="guardarNombre"
-            @keyup.esc="dialogoEditarNombre = false"
+            :error="!!erroresPerfil.nombre"
+            :error-message="erroresPerfil.nombre"
+            :disable="guardandoPerfil"
+            @keyup.esc="dialogoEditarPerfil = false"
+          />
+          <q-input
+            v-model="formPerfil.email"
+            label="Correo electrónico"
+            type="email"
+            outlined dense
+            maxlength="150"
+            :error="!!erroresPerfil.email"
+            :error-message="erroresPerfil.email"
+            :disable="guardandoPerfil"
+            @keyup.esc="dialogoEditarPerfil = false"
           />
         </div>
         <div class="pdv-dialog-actions">
-          <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" :disable="guardandoNombre" />
+          <q-btn flat label="Cancelar" v-close-popup class="pdv-btn-cancel" :disable="guardandoPerfil" />
           <q-btn
-            unelevated label="Guardar" class="pdv-btn-save"
-            :loading="guardandoNombre"
-            @click="guardarNombre"
+            unelevated label="Guardar cambios" class="pdv-btn-save"
+            :loading="guardandoPerfil"
+            @click="guardarPerfil"
           />
         </div>
       </q-card>
@@ -416,10 +429,10 @@ const drawer = ref(true)
 
 // ── Refs de UI ────────────────────────────────────────────
 const dialogoCambioPassword = ref(false)
-const dialogoEditarNombre   = ref(false)
-const formNombre            = ref('')
-const errorNombre           = ref('')
-const guardandoNombre       = ref(false)
+const dialogoEditarPerfil = ref(false)
+const formPerfil          = ref({ nombre: '', email: '' })
+const erroresPerfil       = ref({ nombre: '', email: '' })
+const guardandoPerfil     = ref(false)
 const dialogoSubirFoto      = ref(false)
 const fotoPreview           = ref(null)
 const errorFoto             = ref('')
@@ -464,43 +477,76 @@ function cerrarSesion() {
   router.push({ name: 'Login' })
 }
 
-// ── Editar nombre ─────────────────────────────────────────
-function abrirEditarNombre() {
-  formNombre.value = auth.user?.full_name ?? auth.user?.nombre ?? ''
-  errorNombre.value = ''
-  dialogoEditarNombre.value = true
+// ── Editar perfil ─────────────────────────────────────────
+function abrirEditarPerfil() {
+  formPerfil.value  = {
+    nombre: auth.user?.full_name ?? auth.user?.nombre ?? '',
+    email:  auth.user?.email ?? '',
+  }
+  erroresPerfil.value = { nombre: '', email: '' }
+  dialogoEditarPerfil.value = true
 }
 
-function resetEditarNombre() {
-  formNombre.value = ''
-  errorNombre.value = ''
-  guardandoNombre.value = false
+function resetEditarPerfil() {
+  formPerfil.value    = { nombre: '', email: '' }
+  erroresPerfil.value = { nombre: '', email: '' }
+  guardandoPerfil.value = false
 }
 
-async function guardarNombre() {
-  errorNombre.value = ''
-  const nombre = formNombre.value.trim()
+async function guardarPerfil() {
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  erroresPerfil.value = { nombre: '', email: '' }
+  let valido = true
+
+  const nombre = formPerfil.value.nombre.trim()
+  const email  = formPerfil.value.email.trim().toLowerCase()
 
   if (!nombre) {
-    errorNombre.value = 'El nombre no puede estar vacío.'
-    return
+    erroresPerfil.value.nombre = 'El nombre no puede estar vacío.'
+    valido = false
+  } else if (nombre.length > 100) {
+    erroresPerfil.value.nombre = 'Máximo 100 caracteres.'
+    valido = false
   }
-  if (nombre.length > 100) {
-    errorNombre.value = 'El nombre no puede superar los 100 caracteres.'
+
+  if (!email) {
+    erroresPerfil.value.email = 'El correo no puede estar vacío.'
+    valido = false
+  } else if (!EMAIL_RE.test(email)) {
+    erroresPerfil.value.email = 'Ingresa un correo electrónico válido.'
+    valido = false
+  } else if (email.length > 150) {
+    erroresPerfil.value.email = 'Máximo 150 caracteres.'
+    valido = false
+  }
+
+  if (!valido) return
+
+  const payload = {}
+  if (nombre !== (auth.user?.full_name ?? auth.user?.nombre ?? '').trim()) payload.full_name = nombre
+  if (email  !== (auth.user?.email ?? '').toLowerCase())                   payload.email     = email
+
+  if (!Object.keys(payload).length) {
+    dialogoEditarPerfil.value = false
     return
   }
 
-  guardandoNombre.value = true
+  guardandoPerfil.value = true
   try {
-    const { data } = await api.patch('/users/me', { full_name: nombre })
-    auth.updateUser({ full_name: data.full_name })
-    $q.notify({ type: 'positive', message: 'Nombre actualizado correctamente.', position: 'top' })
-    dialogoEditarNombre.value = false
+    const { data } = await api.patch('/users/me', payload)
+    auth.updateUser({ full_name: data.full_name, email: data.email })
+    $q.notify({ type: 'positive', message: 'Perfil actualizado correctamente.', position: 'top' })
+    dialogoEditarPerfil.value = false
   } catch (err) {
-    const msg = err.response?.data?.message
-    errorNombre.value = msg || 'No se pudo guardar el nombre. Intenta nuevamente.'
+    const status = err.response?.status
+    const msg    = err.response?.data?.message
+    if (status === 409) {
+      erroresPerfil.value.email = 'Este correo ya está registrado por otro usuario.'
+    } else {
+      $q.notify({ type: 'negative', message: msg || 'No se pudo guardar el perfil.', position: 'top' })
+    }
   } finally {
-    guardandoNombre.value = false
+    guardandoPerfil.value = false
   }
 }
 
@@ -706,6 +752,26 @@ async function guardarPassword() {
   align-items: center;
   gap: 12px;
   padding: 16px 16px 14px;
+}
+
+.umenu-edit-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #E7E9EE;
+  background: transparent;
+  color: #9AA0AB;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.umenu-edit-btn:hover {
+  background: #F1F5F9;
+  color: #13224A;
+  border-color: #C5CCD8;
 }
 
 .user-menu-item {

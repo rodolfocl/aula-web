@@ -61,6 +61,7 @@
                   </th>
 
                   <th class="ma-th ma-th-faltas">Faltas</th>
+                  <th class="ma-th ma-th-pct">% Asist.</th>
                 </tr>
               </thead>
               <tbody>
@@ -68,7 +69,20 @@
                   <td class="ma-td-alumno">
                     <div class="ma-alumno-cell">
                       <div class="ma-avatar">{{ iniciales(fila.full_name) }}</div>
-                      <span class="ma-alumno-nombre">{{ fila.full_name }}</span>
+                      <span
+                        class="ma-alumno-nombre"
+                        :style="estadoAsistencia(fila) === 'reprobado' ? 'color:#C0392B;font-weight:700;' : estadoAsistencia(fila) === 'riesgo' ? 'color:#E67E22;font-weight:700;' : ''"
+                      >{{ fila.full_name }}</span>
+                      <div v-if="estadoAsistencia(fila)" style="position:relative;display:inline-flex;flex-shrink:0;">
+                        <q-icon
+                          :name="estadoAsistencia(fila) === 'reprobado' ? 'error' : 'warning'"
+                          size="14px"
+                          :style="estadoAsistencia(fila) === 'reprobado' ? 'color:#C0392B;' : 'color:#E67E22;'"
+                        />
+                        <q-tooltip class="pdv-tooltip">
+                          {{ estadoAsistencia(fila) === 'reprobado' ? 'Reprobado por asistencia' : 'Alumno en riesgo por asistencia' }}
+                        </q-tooltip>
+                      </div>
                     </div>
                   </td>
 
@@ -87,15 +101,10 @@
                   <td v-if="esActivo" class="ma-td-add" />
 
                   <td class="ma-td-faltas">
-                    <div style="display:inline-flex;align-items:center;gap:4px;">
-                      <span :style="faltasStyle(calcFaltas(fila))">{{ calcFaltas(fila) }}</span>
-                      <q-icon
-                        v-if="esReprobadoPorAsistencia(fila)"
-                        name="error" size="14px" style="color:#C0392B;"
-                      >
-                        <q-tooltip class="pdv-tooltip">Reprobado por asistencia</q-tooltip>
-                      </q-icon>
-                    </div>
+                    <span :style="faltasStyle(calcFaltas(fila))">{{ calcFaltas(fila) }}</span>
+                  </td>
+                  <td class="ma-td-pct">
+                    <span :style="pctStyle(calcPct(fila))">{{ calcPct(fila) }}%</span>
                   </td>
                 </tr>
               </tbody>
@@ -239,10 +248,25 @@ function faltasStyle(n) {
   return 'color:#C0392B;font-weight:700;font-size:15px;'
 }
 
-function esReprobadoPorAsistencia(fila) {
+function calcPct(fila) {
+  const vals = Object.values(fila.asistencia).filter(s => s !== null)
+  if (!vals.length) return 100
+  const presentes = vals.filter(s => s === 'present' || s === 'justified').length
+  return Math.round((presentes / vals.length) * 100)
+}
+
+function pctStyle(pct) {
+  const color = pct >= 75 ? '#4A9D69' : pct >= 60 ? '#E2A83B' : '#C0392B'
+  return `color:${color};font-weight:700;font-size:15px;`
+}
+
+function estadoAsistencia(fila) {
   const max = props.instancia?.max_absences
-  if (max == null) return false
-  return calcFaltas(fila) > max
+  if (max == null) return null
+  const faltas = calcFaltas(fila)
+  if (faltas > max)  return 'reprobado'
+  if (faltas === max) return 'riesgo'
+  return null
 }
 
 function sesionSinRegistros(ses) {
@@ -494,6 +518,7 @@ onBeforeUnmount(() => {
 .ma-th-ses    { min-width: 72px; }
 .ma-th-add    { width: 50px; }
 .ma-th-faltas { min-width: 70px; }
+.ma-th-pct    { min-width: 80px; }
 
 /* Fecha clickeable */
 .ma-fecha-cell {
@@ -587,6 +612,7 @@ onBeforeUnmount(() => {
 .ma-add-btn:hover { border-color: #13224A; color: #13224A; background: #F4F7FC; }
 
 .ma-td-faltas { text-align: center; padding: 10px 16px; }
+.ma-td-pct    { text-align: center; padding: 10px 16px; }
 
 /* ── Footer ── */
 .ma-footer {

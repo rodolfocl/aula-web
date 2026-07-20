@@ -144,12 +144,18 @@
                   :class="{ 'clase-row-border': idx < alerts.alumnosEnRiesgo.length - 1 }"
                 >
                   <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 13.5px; color: #0D1B3E; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    <div
+                      style="font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                      :style="{ color: alumno.nivel === 'reprobado' ? '#C0392B' : '#E67E22' }"
+                    >
                       {{ alumno.student_name }}
                     </div>
                     <div style="font-size: 11px; color: #64748B; margin-top: 1px;">{{ alumno.course_name }}</div>
                   </div>
-                  <span class="pdv-pill pdv-pill-warning">{{ alumno.avg_grade }}</span>
+                  <span
+                    class="pdv-pill"
+                    :class="alumno.nivel === 'reprobado' ? 'pdv-pill-error' : 'pdv-pill-warning'"
+                  >{{ alumno.absences }} faltas</span>
                 </div>
               </template>
             </q-card>

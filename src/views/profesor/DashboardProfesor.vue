@@ -16,7 +16,9 @@
             :class="['seg-btn', tabActual === 'todas' && 'seg-btn--active']"
             @click="tabActual = 'todas'"
           >
-            Todas <span class="seg-count">{{ instancias.length }}</span>
+            Todas
+            <span v-if="cargandoFinalizadas && tabActual === 'todas'" class="seg-count">…</span>
+            <span v-else class="seg-count">{{ instancias.length }}</span>
           </button>
           <button
             :class="['seg-btn', tabActual === 'activas' && 'seg-btn--active']"
@@ -28,7 +30,9 @@
             :class="['seg-btn', tabActual === 'finalizadas' && 'seg-btn--active']"
             @click="tabActual = 'finalizadas'"
           >
-            Finalizadas <span class="seg-count">{{ cursosFinalizados.length }}</span>
+            Finalizadas
+            <span v-if="cargandoFinalizadas" class="seg-count">…</span>
+            <span v-else class="seg-count">{{ cursosFinalizados.length }}</span>
           </button>
         </div>
         <q-input
@@ -114,81 +118,64 @@
               v-for="inst in seccion.items"
               :key="inst.id"
               :class="[
-                'curso-card',
-                instanciaModal && instanciaModal.id !== inst.id ? 'curso-card--dimmed' : '',
-                instanciaModal?.id === inst.id ? 'curso-card--editando' : '',
+                'ccard',
+                seccion.esPropia ? 'ccard--propia' : 'ccard--otra',
+                instanciaModal && instanciaModal.id !== inst.id ? 'ccard--dimmed' : '',
+                instanciaModal?.id === inst.id ? 'ccard--editando' : '',
               ]"
             >
-              <!-- Franja de estado izquierda -->
-              <div :class="['curso-stripe', stripeClass(inst, seccion.esPropia)]" />
+              <!-- Etiqueta pequeña para cursos propios extra -->
+              <div v-if="seccion.esPropia" class="ccard-sublabel">TAMBIÉN ES MI CLASE</div>
 
-              <!-- Bloque: nombre + período + lápiz -->
-              <div class="curso-bloque curso-bloque-nombre">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <div class="curso-nombre">{{ inst.course_name }}</div>
-                  <div v-if="esActivo(inst)" style="position: relative; display: inline-flex; flex-shrink: 0;" @click.stop>
-                    <button class="pdv-action-btn" style="width: 26px; height: 26px;" @click.stop="abrirEditar(inst)">
-                      <q-icon name="edit" size="13px" />
+              <div class="ccard-top">
+                <div style="min-width: 0; flex: 1;">
+                  <div class="ccard-nombre">{{ inst.course_name }}</div>
+                  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px;">
+                    <div class="ccard-meta">{{ cardMeta(inst) }}</div>
+                    <button class="ccard-alumnos-btn" @click.stop="abrirDrawer(inst)">
+                      <q-spinner-dots v-if="inst.cargandoAlumnos" size="12px" />
+                      <template v-else>{{ alumnosActivos(inst).length }} {{ alumnosActivos(inst).length === 1 ? 'alumno' : 'alumnos' }}</template>
+                      <q-icon name="visibility" size="14px" />
                     </button>
-                    <div style="position: absolute; inset: 0; pointer-events: none;">
-                      <q-tooltip class="pdv-tooltip">Editar curso</q-tooltip>
-                    </div>
                   </div>
+                  <div v-if="!seccion.esPropia" class="ccard-profesor">{{ inst.teacher_name ?? '—' }}</div>
                 </div>
-                <div class="curso-meta">{{ inst.year }} · {{ inst.period ?? '—' }}</div>
-              </div>
-
-              <!-- Bloque: profesor -->
-              <div class="curso-bloque">
-                <div class="curso-bloque-label">Profesor</div>
-                <div class="curso-bloque-valor">{{ inst.teacher_name ?? '—' }}</div>
-              </div>
-
-              <!-- Bloque: día y hora -->
-              <div class="curso-bloque">
-                <div class="curso-bloque-label">Día y hora</div>
-                <div class="curso-bloque-valor">
-                  {{ [inst.day_of_week, inst.schedule_time?.slice(0,5)].filter(Boolean).join(' · ') || '—' }}
+                <div v-if="esActivo(inst)" @click.stop style="display: flex; flex-direction: column; gap: 6px;">
+                  <button class="ccard-edit-btn" @click.stop="abrirEditar(inst)">
+                    <q-icon name="edit" size="14px" />
+                    <q-tooltip class="pdv-tooltip">Editar curso</q-tooltip>
+                  </button>
+                  <button class="ccard-edit-btn ccard-finish-btn" @click.stop="abrirFinalizar(inst)">
+                    <q-icon name="check_circle" size="14px" />
+                    <q-tooltip class="pdv-tooltip">Terminar curso</q-tooltip>
+                  </button>
                 </div>
               </div>
 
-              <!-- Bloque: alumnos → drawer -->
-              <div
-                class="curso-bloque curso-bloque-alumnos curso-bloque-ver"
-                @click.stop="abrirDrawer(inst)"
-              >
-                <div class="curso-bloque-label">Alumnos</div>
-                <div class="curso-bloque-valor" style="display: flex; align-items: center; gap: 5px;">
-                  <q-spinner-dots v-if="inst.cargandoAlumnos" size="14px" color="grey-5" />
-                  <span v-else>{{ alumnosActivos(inst).length }}</span>
-                  <q-icon name="visibility" size="15px" style="color: #9AA0AB;" />
-                </div>
-              </div>
-
-              <!-- Acciones -->
-              <div class="curso-acciones" @click.stop>
-                <div v-if="instanciaModal?.id === inst.id" class="editando-chip">
+              <div class="ccard-acciones" @click.stop>
+                <div v-if="instanciaModal?.id === inst.id" class="ccard-editando-chip">
                   {{ modalTipo === 'asistencia' ? 'Editando asistencia' : 'Editando notas' }}
                 </div>
                 <template v-if="esActivo(inst)">
                   <div style="position: relative; display: inline-flex;">
-                    <q-btn
-                      unelevated dense no-caps icon="videocam" label="Iniciar Clase"
-                      :class="['curso-btn', inst.google_meet_link ? 'curso-btn-meet' : 'curso-btn-meet-disabled']"
-                      :disable="!inst.google_meet_link"
+                    <button
+                      :class="['ccard-btn', inst.google_meet_link ? 'ccard-btn-meet' : 'ccard-btn-disabled']"
+                      :disabled="!inst.google_meet_link"
                       @click="inst.google_meet_link && abrirMeet(inst.google_meet_link)"
-                    />
+                    >
+                      <q-icon name="videocam" size="15px" style="margin-right: 4px;" />
+                      Iniciar Clase
+                    </button>
                     <div v-if="!inst.google_meet_link" style="position: absolute; inset: 0; pointer-events: none;">
                       <q-tooltip class="pdv-tooltip">Este curso no tiene reunión de Meet configurada</q-tooltip>
                     </div>
                   </div>
-                  <q-btn unelevated dense no-caps label="Asistencia" class="curso-btn curso-btn-accion" @click="abrirModal(inst, 'asistencia')" />
-                  <q-btn unelevated dense no-caps label="Notas"       class="curso-btn curso-btn-accion" @click="abrirModal(inst, 'notas')" />
-                  <q-btn unelevated dense no-caps label="Finalizar"   class="curso-btn curso-btn-peligro" @click="abrirFinalizar(inst)" />
+                  <button class="ccard-btn ccard-btn-accion" @click="abrirModal(inst, 'asistencia')">Asistencia</button>
+                  <button class="ccard-btn ccard-btn-accion" @click="abrirModal(inst, 'notas')">Notas</button>
                 </template>
                 <template v-else>
-                  <q-btn unelevated dense no-caps label="Ver asistencia" class="curso-btn curso-btn-neutro" @click="abrirModal(inst, 'asistencia')" />
-                  <q-btn unelevated dense no-caps label="Ver notas"      class="curso-btn curso-btn-neutro" @click="abrirModal(inst, 'notas')" />
+                  <button class="ccard-btn ccard-btn-neutro" @click="abrirModal(inst, 'asistencia')">Ver asistencia</button>
+                  <button class="ccard-btn ccard-btn-neutro" @click="abrirModal(inst, 'notas')">Ver notas</button>
                 </template>
               </div>
             </div>
@@ -402,6 +389,11 @@ function heroMeta(inst) {
   return [diaHora, inst.period].filter(Boolean).join(' · ')
 }
 
+function cardMeta(inst) {
+  const diaHora = [inst.day_of_week, inst.schedule_time?.slice(0, 5)].filter(Boolean).join(' ')
+  return [diaHora, inst.period, inst.year].filter(Boolean).join(' · ')
+}
+
 function stripeClass(inst, esPropia) {
   if (esPropia) return 'stripe-propia'
   return esActivo(inst) ? 'stripe-activo' : 'stripe-finalizado'
@@ -476,7 +468,9 @@ const seccionesListado = computed(() => {
 })
 
 function alumnosActivos(inst) {
-  return (inst.alumnos ?? []).filter(a => a.status !== 'withdrawn')
+  if (inst.alumnos !== null) return inst.alumnos.filter(a => a.status !== 'withdrawn')
+  // Mientras no se carguen enrollments, usar student_count del servidor
+  return Array.from({ length: Number(inst.student_count ?? 0) })
 }
 
 const opcionesProfesores = computed(() =>
@@ -631,13 +625,17 @@ async function confirmarFinalizar() {
 }
 
 // ── Carga de datos ────────────────────────────────────────────────────
-function generateBatchId() { return Math.random().toString(36).slice(2, 9) }
+const finalizadasCargadas = ref(false)
+const cargandoFinalizadas = ref(false)
 
-async function cargarAlumnos(inst, batchId = null) {
+function initInst(i) {
+  return { ...i, alumnos: null, cargandoAlumnos: false }
+}
+
+async function cargarAlumnos(inst) {
   inst.cargandoAlumnos = true
   try {
-    const config = batchId ? { headers: { 'X-Batch-Id': batchId } } : {}
-    const { data } = await api.get(`/enrollments/instance/${inst.id}`, config)
+    const { data } = await api.get(`/enrollments/instance/${inst.id}`)
     inst.alumnos = data.slice().sort((a, b) => (a.full_name ?? '').localeCompare(b.full_name ?? '', 'es'))
   } catch {
     inst.alumnos = []
@@ -646,13 +644,33 @@ async function cargarAlumnos(inst, batchId = null) {
   }
 }
 
+async function cargarFinalizadas() {
+  if (finalizadasCargadas.value || cargandoFinalizadas.value) return
+  cargandoFinalizadas.value = true
+  try {
+    const { data } = await api.get('/courses?status=finished')
+    const existingIds = new Set(instancias.value.map(i => i.id))
+    const nuevas = data.filter(i => !existingIds.has(i.id)).map(initInst)
+    instancias.value.push(...nuevas)
+    finalizadasCargadas.value = true
+    nuevas.forEach(inst => cargarAlumnos(inst))
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudieron cargar los cursos finalizados.', position: 'top' })
+  } finally {
+    cargandoFinalizadas.value = false
+  }
+}
+
+watch(tabActual, (tab) => {
+  if (tab === 'finalizadas' || tab === 'todas') cargarFinalizadas()
+})
+
 onMounted(async () => {
   cargando.value = true
   try {
-    const batchId = generateBatchId()
-    const { data } = await api.get('/courses', { headers: { 'X-Batch-Id': batchId } })
-    instancias.value = data.map(i => ({ ...i, alumnos: null, cargandoAlumnos: false }))
-    await Promise.all(instancias.value.map(inst => cargarAlumnos(inst, batchId)))
+    const { data } = await api.get('/courses?status=active')
+    instancias.value = data.map(initInst)
+    await Promise.all(instancias.value.map(inst => cargarAlumnos(inst)))
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudieron cargar los cursos.', position: 'top' })
   } finally {
@@ -846,113 +864,149 @@ onMounted(async () => {
 .cursos-lista {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
-.curso-card {
-  display: flex;
-  align-items: center;
-  gap: 0;
+/* ── Card estilo hero (blanca) ── */
+.ccard {
   background: white;
+  border-radius: 18px;
+  padding: 22px 26px 18px;
   border: 1px solid #E7E9EE;
-  border-radius: 10px;
-  overflow: hidden;
-  transition: box-shadow 0.15s, border-color 0.15s;
-  min-height: 80px;
+  transition: box-shadow 0.15s, border-color 0.15s, opacity 0.2s;
 }
 
-.curso-card:hover {
+.ccard:hover {
   border-color: #C5CCD8;
-  box-shadow: 0 2px 8px rgba(19,34,74,0.07);
+  box-shadow: 0 2px 10px rgba(19,34,74,0.08);
 }
 
-.curso-bloque-ver {
-  cursor: pointer;
-  transition: background 0.12s;
-  border-radius: 6px;
-}
-.curso-bloque-ver:hover { background: #F4F7FC; }
-
-/* Franjas de estado */
-.curso-stripe        { width: 4px; align-self: stretch; flex-shrink: 0; }
-.stripe-activo       { background: #4A9D69; }
-.stripe-propia       { background: #4A6EA8; }
-.stripe-finalizado   { background: #CBD5E1; }
-
-/* Bloques de info */
-.curso-bloque { padding: 18px 16px; min-width: 0; }
-
-.curso-bloque-nombre {
-  flex: 0 1 auto;
-  min-width: 160px;
-  max-width: 320px;
+.ccard--propia {
+  background: #F6F8FD;
+  border-color: #D0D9EE;
 }
 
-.curso-nombre {
-  font-size: 14px;
-  font-weight: 700;
-  color: #13224A;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.ccard--dimmed { opacity: 0.52; }
 
-.curso-meta { font-size: 12px; color: #9AA0AB; margin-top: 2px; }
-
-.curso-bloque-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #9AA0AB;
-  margin-bottom: 3px;
-}
-
-.curso-bloque-valor {
-  font-size: 13.5px;
-  color: #13224A;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.curso-bloque-alumnos { min-width: 80px; }
-
-/* Acciones */
-.curso-acciones {
-  margin-left: auto;
-  padding: 0 16px 0 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.curso-btn {
-  font-size: 12.5px !important;
-  font-weight: 600 !important;
-  border-radius: 7px !important;
-  padding: 0 12px !important;
-  height: 32px !important;
-}
-
-.curso-btn-accion        { background: #F0F4FA !important; color: #13224A !important; }
-.curso-btn-accion:hover  { background: #E2E9F5 !important; }
-.curso-btn-neutro        { background: #F5F5F5 !important; color: #64748B !important; }
-.curso-btn-peligro       { background: #FEF2F1 !important; color: #C0392B !important; }
-.curso-btn-peligro:hover { background: #FCDAD7 !important; }
-.curso-btn-meet          { background: #E8F5E9 !important; color: #1E7E34 !important; }
-.curso-btn-meet:hover    { background: #C8E6C9 !important; }
-.curso-btn-meet-disabled { background: #F5F5F5 !important; color: #BDBDBD !important; cursor: not-allowed !important; }
-
-/* ── Resaltado modal activo ── */
-.curso-card--editando {
+.ccard--editando {
   border-color: #8E9EBB !important;
   background: #E0E6F2 !important;
-  box-shadow: 0 2px 12px rgba(19, 34, 74, 0.14) !important;
+  box-shadow: 0 2px 12px rgba(19,34,74,0.14) !important;
 }
 
-.curso-card--dimmed { opacity: 0.52; transition: opacity 0.2s; }
+.ccard-sublabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7B93C4;
+  margin-bottom: 8px;
+}
+
+.ccard-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.ccard-nombre {
+  font-size: 20px;
+  font-weight: 700;
+  color: #13224A;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.ccard-meta {
+  font-size: 14px;
+  color: #64748B;
+}
+
+.ccard-profesor {
+  font-size: 13px;
+  color: #94A3B8;
+  margin-top: 6px;
+}
+
+.ccard-alumnos-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(19,34,74,0.07);
+  border: none;
+  border-radius: 20px;
+  padding: 3px 10px 3px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4A5D80;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.ccard-alumnos-btn:hover { background: rgba(19,34,74,0.13); }
+
+.ccard-edit-btn {
+  background: transparent;
+  border: 1px solid #DDE3EE;
+  color: #7B93C4;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.ccard-edit-btn:hover { background: #F0F4FA; }
+.ccard-finish-btn:hover { background: #FEF2F1; color: #C0392B; border-color: #FCDAD7; }
+
+.ccard-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ccard-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.ccard-btn-meet         { background: #E8F5E9; color: #1E7E34; }
+.ccard-btn-meet:hover   { background: #C8E6C9; }
+.ccard-btn-disabled     { background: #F5F5F5; color: #BDBDBD; cursor: not-allowed; }
+.ccard-btn-accion       { background: #F0F4FA; color: #13224A; }
+.ccard-btn-accion:hover { background: #E2E9F5; }
+.ccard-btn-peligro      { background: #FEF2F1; color: #C0392B; }
+.ccard-btn-peligro:hover{ background: #FCDAD7; }
+.ccard-btn-neutro       { background: #F5F5F5; color: #64748B; }
+.ccard-btn-neutro:hover { background: #EBEBEB; }
+
+.ccard-editando-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #DDE2EE;
+  color: #3D5185;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
 
 /* ── Paginación ── */
 .paginacion {
