@@ -53,7 +53,7 @@
 
       <!-- ── Clases de hoy ── -->
       <template v-if="esAdmin || esProfesor">
-        <div class="section-title">{{ esAdmin ? 'Clases de hoy' : 'Tus clases de hoy' }}</div>
+        <div class="section-title">Clases de hoy</div>
         <q-card flat class="section-card q-mb-lg">
           <div v-if="!summary?.clasesHoy?.length" class="empty-section">
             <i class="ti ti-calendar-off" style="font-size: 28px; color: #CBD5E1; display: block; margin-bottom: 6px;" />
@@ -179,8 +179,8 @@ const cargandoAlertas = ref(false)
 const summary = ref(null)
 const alerts = ref(null)
 
-const esAdmin = computed(() => auth.hasRole('administrador'))
-const esProfesor = computed(() => !esAdmin.value && auth.hasRole('profesor'))
+const esAdmin    = computed(() => auth.hasRole('administrador') || auth.hasRole('profesor'))
+const esProfesor = computed(() => auth.hasRole('profesor'))
 
 const primerNombre = computed(() => {
   const nombre = auth.user?.full_name ?? auth.user?.nombre ?? ''
@@ -199,8 +199,7 @@ onMounted(async () => {
   cargando.value = true
   try {
     if (esAdmin.value || esProfesor.value) {
-      const params = esProfesor.value ? { teacher_id: auth.user.id } : {}
-      const { data } = await api.get('/dashboard/summary', { params })
+      const { data } = await api.get('/dashboard/summary')
       summary.value = data
     }
   } catch {

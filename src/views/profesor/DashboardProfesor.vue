@@ -109,7 +109,7 @@
         <!-- ── Cursos propios extra + Otras clases ─────────────── -->
         <template v-for="seccion in seccionesListado" :key="seccion.key">
           <div v-if="seccion.label" class="otras-clases-label">{{ seccion.label }}</div>
-          <div class="cursos-lista">
+          <div v-if="seccion.items.length > 0" class="cursos-lista">
             <div
               v-for="inst in seccion.items"
               :key="inst.id"
@@ -417,7 +417,7 @@ const esProfesor = computed(() => auth.hasRole('profesor'))
 const userId     = computed(() => auth.user?.id)
 
 const heroInst = computed(() => {
-  if (!esProfesor.value || tabActual.value === 'finalizadas') return null
+  if (tabActual.value === 'finalizadas') return null
   const mias = instanciasParaTab.value.filter(i => i.teacher_id === userId.value && i.status === 'active')
   return mias.length ? sortByScheduleProximity(mias)[0] : null
 })

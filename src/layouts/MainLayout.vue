@@ -54,7 +54,7 @@
                     {{ auth.user?.email }}
                   </div>
                   <div style="font-size: 12px; font-weight: 600; color: #C99A63; text-transform: capitalize; margin-top: 3px;">
-                    {{ esAdmin ? 'Administrador' : (auth.userRoles.join(' · ') || '—') }}
+                    {{ rolPrincipal }}
                   </div>
                 </div>
                 <button class="umenu-edit-btn" @click.stop="abrirEditarPerfil">
@@ -449,6 +449,13 @@ const showConfirmar = ref(false)
 // ── Computed ──────────────────────────────────────────────
 const esAdmin = computed(() => auth.hasRole('administrador'))
 const esPropietarioGoogle = computed(() => isOwner(auth.user?.email))
+
+const rolPrincipal = computed(() => {
+  if (auth.hasRole('administrador')) return 'Administrador'
+  if (auth.hasRole('profesor'))      return 'Profesor'
+  if (auth.hasRole('alumno'))        return 'Alumno'
+  return '—'
+})
 
 const isProfesorActive = computed(() =>
   isActive('ProfesorSesion') ||

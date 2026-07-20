@@ -93,7 +93,7 @@ const routes = [
         path: 'admin/integraciones',
         name: 'AdminIntegraciones',
         component: () => import('../views/admin/AdminIntegraciones.vue'),
-        meta: { roles: ['administrador'], ownerOnly: true },
+        meta: { roles: ['administrador', 'profesor'], ownerOnly: true },
       },
     ],
   },
@@ -115,8 +115,8 @@ router.beforeEach((to) => {
 
   if (!auth.isAuthenticated) return { name: 'Login' }
 
-  if (to.meta.rol && !auth.hasRole(to.meta.rol)) return { name: 'Login' }
-  if (to.meta.roles && !to.meta.roles.some(r => auth.hasRole(r))) return { name: 'Login' }
+  if (to.meta.rol && !auth.hasRole(to.meta.rol)) return { name: 'Inicio' }
+  if (to.meta.roles && !to.meta.roles.some(r => auth.hasRole(r))) return { name: 'Inicio' }
 
   if (to.meta.ownerOnly && !isOwner(auth.user?.email)) return { name: 'Inicio' }
 
