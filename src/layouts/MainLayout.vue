@@ -24,11 +24,6 @@
         <!-- Derecha: campana + bloque usuario -->
         <div class="row items-center no-wrap" style="gap: 4px;">
 
-          <!-- Notificaciones (decorativo) -->
-          <q-btn flat round dense icon="notifications_none" color="grey-6" size="sm">
-            <q-tooltip class="pdv-tooltip" anchor="bottom middle" self="top middle">Notificaciones</q-tooltip>
-          </q-btn>
-
           <!-- Bloque usuario clickeable -->
           <div class="user-block">
             <div class="pdv-avatar pdv-avatar-md topbar-avatar">
