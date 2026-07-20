@@ -74,9 +74,32 @@
 
       <!-- ── ERROR ───────────────────────────────────────────── -->
       <div v-else-if="error" class="estado-vacio">
-        <i class="ti ti-alert-circle" style="font-size: 32px; color: #C0392B;" />
-        <div>{{ error }}</div>
-        <q-btn flat label="Reintentar" color="primary" @click="cargarContenido()" />
+        <template v-if="errorCodigo === 'GOOGLE_INVALID_GRANT'">
+          <i class="ti ti-brand-google" style="font-size: 36px; color: #64748B;" />
+          <div style="font-weight: 600; color: #0D1B3E; text-align: center; max-width: 360px;">
+            La conexión con Google expiró
+          </div>
+          <div style="font-size: 13px; color: #64748B; text-align: center; max-width: 360px;">
+            {{ esPropietarioGoogle
+              ? 'Es necesario reconectar la cuenta de Google para acceder a los archivos.'
+              : 'Contacta al administrador para reconectar la cuenta de Google.' }}
+          </div>
+          <q-btn
+            v-if="esPropietarioGoogle"
+            unelevated
+            :loading="reconectando"
+            style="background: #0D1B3E; color: #fff; border-radius: 8px; margin-top: 4px;"
+            @click="reconectarGoogle"
+          >
+            <i class="ti ti-refresh" style="font-size: 15px; margin-right: 8px;" />
+            Reconectar Google
+          </q-btn>
+        </template>
+        <template v-else>
+          <i class="ti ti-alert-circle" style="font-size: 32px; color: #C0392B;" />
+          <div>{{ error }}</div>
+          <q-btn flat label="Reintentar" color="primary" @click="cargarContenido()" />
+        </template>
       </div>
 
       <template v-else>
@@ -415,10 +438,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import api from '../services/api'
+import { useAuthStore } from '../stores/authStore'
+import { isOwner } from '../config/owner'
 
 const $q     = useQuasar()
 const route  = useRoute()
 const router = useRouter()
+const auth   = useAuthStore()
+
+const esPropietarioGoogle = computed(() => isOwner(auth.user?.email))
 
 // ── Paginación ────────────────────────────────────────────
 const POR_PAGINA = 10
@@ -450,10 +478,13 @@ const carpetas        = ref([])
 const archivos        = ref([])
 const cargando        = ref(false)
 const error           = ref('')
+const errorCodigo     = ref(null)
+const reconectando    = ref(false)
 
 async function cargarContenido(folderId = currentFolderId.value) {
   cargando.value = true
   error.value = ''
+  errorCodigo.value = null
   try {
     const params = folderId ? { folderId } : {}
     const { data } = await api.get('/drive/browse', { params })
@@ -464,9 +495,28 @@ async function cargarContenido(folderId = currentFolderId.value) {
     paginaCarpetas.value  = 1
     paginaArchivos.value  = 1
   } catch (err) {
+    errorCodigo.value = err.response?.data?.code ?? null
     error.value = err.response?.data?.error || 'No se pudo cargar el contenido. Intenta de nuevo.'
   } finally {
     cargando.value = false
+  }
+}
+
+async function reconectarGoogle() {
+  reconectando.value = true
+  try {
+    const { data } = await api.get('/admin/google/connect')
+    window.open(data.url, '_blank', 'noopener')
+    $q.notify({
+      type: 'info',
+      message: 'Autoriza en la pestaña que se abrió y luego recargá esta página.',
+      position: 'top',
+      timeout: 8000,
+    })
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo iniciar la reconexión con Google.', position: 'top' })
+  } finally {
+    reconectando.value = false
   }
 }
 

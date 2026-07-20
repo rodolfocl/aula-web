@@ -34,9 +34,14 @@
           <div class="cd-body">
             <div class="cd-section-header">
               <div class="cd-section-title">Alumnos inscritos</div>
-              <button class="cd-btn-add" @click="$emit('agregarAlumno', instancia)">
+              <button v-if="!cursoFinalizado" class="cd-btn-add" @click="$emit('agregarAlumno', instancia)">
                 <q-icon name="person_add" size="14px" />
                 Agregar alumno
+              </button>
+              <button v-else class="cd-btn-diploma-todos" :disabled="generandoTodos" @click="generarTodos">
+                <q-spinner-dots v-if="generandoTodos" size="14px" />
+                <i v-else class="ti ti-certificate" style="font-size: 14px;" />
+                {{ generandoTodos ? 'Generando…' : 'Generar todos los diplomas' }}
               </button>
             </div>
 
@@ -65,7 +70,37 @@
                         : `${alumno.absence_count} falta${alumno.absence_count > 1 ? 's' : ''}` }}
                     </div>
                   </div>
-                  <div style="position: relative; display: inline-flex;" @click.stop>
+                  <!-- Botón diploma (solo cursos finalizados) -->
+                  <div v-if="cursoFinalizado" style="position: relative; display: inline-flex; margin-right: 4px;" @click.stop>
+                    <button
+                      v-if="estadoDiploma(alumno).estado === 'generando'"
+                      class="pdv-action-btn pdv-action-disabled"
+                    >
+                      <q-spinner-dots size="14px" />
+                    </button>
+                    <button
+                      v-else-if="estadoDiploma(alumno).estado === 'generado'"
+                      class="pdv-action-btn cd-diploma-btn cd-diploma-btn--generado"
+                      @click="descargarDiploma(alumno)"
+                    >
+                      <i class="ti ti-file-type-pdf" style="font-size: 16px;" />
+                    </button>
+                    <button
+                      v-else
+                      class="pdv-action-btn cd-diploma-btn"
+                      @click="generarDiploma(alumno)"
+                    >
+                      <i class="ti ti-certificate" style="font-size: 16px;" />
+                    </button>
+                    <div style="position: absolute; inset: 0; pointer-events: none;">
+                      <q-tooltip class="pdv-tooltip">
+                        {{ estadoDiploma(alumno).estado === 'generado' ? 'Descargar diploma' : 'Generar diploma' }}
+                      </q-tooltip>
+                    </div>
+                  </div>
+
+                  <!-- Botón eliminar (solo cursos activos) -->
+                  <div v-if="!cursoFinalizado" style="position: relative; display: inline-flex;" @click.stop>
                     <button
                       :class="['pdv-action-btn', 'pdv-action-danger', eliminando === alumno.id && 'pdv-action-disabled']"
                       @click="eliminando !== alumno.id && confirmarEliminar(alumno)"
@@ -117,7 +152,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useQuasar } from 'quasar'
 import api from '../services/api'
 
@@ -137,6 +172,73 @@ const abierto = computed({
 const alumnosActivos = computed(() =>
   (props.instancia?.alumnos ?? []).filter(a => a.status !== 'withdrawn')
 )
+
+const cursoFinalizado = computed(() =>
+  props.instancia?.status != null && props.instancia.status !== 'active'
+)
+
+// Estado diplomas por enrollment id: { estado: 'sin_generar'|'generando'|'generado', url: null|string }
+const diplomaEstados  = ref({})
+const generandoTodos  = ref(false)
+
+watch(() => props.instancia?.id, () => {
+  diplomaEstados.value = {}
+  generandoTodos.value = false
+})
+
+function estadoDiploma(alumno) {
+  return diplomaEstados.value[alumno.id] ?? { estado: 'sin_generar', url: null }
+}
+
+async function generarDiploma(alumno) {
+  diplomaEstados.value = { ...diplomaEstados.value, [alumno.id]: { estado: 'generando', url: null } }
+  try {
+    const response = await api.post(
+      `/courses/${props.instancia.id}/diplomas/${alumno.id}`,
+      {},
+      { responseType: 'blob' },
+    )
+    const contentType = response.headers['content-type'] ?? ''
+    if (contentType.includes('application/pdf')) {
+      // Fallback: Drive no disponible — descarga directa del buffer
+      const blobUrl = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = response.headers['content-disposition']?.match(/filename="(.+)"/)?.[1] ?? 'diploma.pdf'
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000)
+      diplomaEstados.value = { ...diplomaEstados.value, [alumno.id]: { estado: 'sin_generar', url: null } }
+    } else {
+      const text = await response.data.text()
+      const { url } = JSON.parse(text)
+      diplomaEstados.value = { ...diplomaEstados.value, [alumno.id]: { estado: 'generado', url } }
+      $q.notify({ type: 'positive', message: `Diploma de ${alumno.full_name} generado correctamente.`, position: 'top' })
+    }
+  } catch {
+    diplomaEstados.value = { ...diplomaEstados.value, [alumno.id]: { estado: 'sin_generar', url: null } }
+    $q.notify({ type: 'negative', message: `No se pudo generar el diploma de ${alumno.full_name}.`, position: 'top' })
+  }
+}
+
+function descargarDiploma(alumno) {
+  const { url } = estadoDiploma(alumno)
+  if (url) window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+async function generarTodos() {
+  const pendientes = alumnosActivos.value.filter(a => estadoDiploma(a).estado === 'sin_generar')
+  if (!pendientes.length) return
+  generandoTodos.value = true
+  try {
+    await Promise.all(pendientes.map(a => generarDiploma(a)))
+    const errores = pendientes.filter(a => estadoDiploma(a).estado === 'sin_generar').length
+    if (!errores) {
+      $q.notify({ type: 'positive', message: 'Todos los diplomas generados correctamente.', position: 'top' })
+    }
+  } finally {
+    generandoTodos.value = false
+  }
+}
 
 const dialogoEliminar   = ref(false)
 const alumnoAEliminar   = ref(null)
@@ -406,6 +508,39 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
   transition: background 0.15s;
 }
 .cd-btn-cancel:hover { background: #F4F1EC; }
+
+/* ── Botón diploma individual ── */
+.cd-diploma-btn {
+  border: 1.5px solid #4A6EA8 !important;
+  color: #4A6EA8;
+}
+.cd-diploma-btn:hover { background: #EEF2FB; }
+
+.cd-diploma-btn--generado {
+  background: #FEF2F2;
+  color: #C0392B;
+  border: 1.5px solid #C0392B !important;
+}
+.cd-diploma-btn--generado:hover { background: #FEE2E2 !important; color: #C0392B !important; }
+
+/* ── Botón generar todos ── */
+.cd-btn-diploma-todos {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #4A6EA8;
+  background: transparent;
+  color: #4A6EA8;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.cd-btn-diploma-todos:hover:not(:disabled) { background: #EEF2FB; }
+.cd-btn-diploma-todos:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ── Mobile ── */
 @media (max-width: 599px) {

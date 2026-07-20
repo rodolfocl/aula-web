@@ -30,7 +30,8 @@ api.interceptors.response.use(
     return response
   },
   (error) => {
-    if (error.response?.status === 401) {
+    const isGoogleOAuthError = error.response?.data?.code === 'GOOGLE_INVALID_GRANT'
+    if (error.response?.status === 401 && !isGoogleOAuthError) {
       const auth = useAuthStore()
       const wasAuthenticated = auth.isAuthenticated
       auth.logout()

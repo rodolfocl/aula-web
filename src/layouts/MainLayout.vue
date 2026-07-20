@@ -224,6 +224,22 @@
 
           </template>
 
+          <template v-if="esPropietarioGoogle">
+            <q-item
+              clickable v-ripple
+              :to="{ name: 'AdminIntegraciones' }"
+              class="sidebar-item"
+              :class="{ 'sidebar-item-active': isActive('AdminIntegraciones') }"
+              @click="cerrarDrawerMobile"
+            >
+              <i class="ti ti-plug-connected"
+                :style="`font-size: 22px; color: ${isActive('AdminIntegraciones') ? '#FFFFFF' : 'rgba(255,255,255,0.65)'};`" />
+              <q-tooltip anchor="center right" self="center left" :offset="[12, 0]" class="pdv-tooltip">
+                Integraciones
+              </q-tooltip>
+            </q-item>
+          </template>
+
         </div>
       </div>
     </q-drawer>
@@ -390,6 +406,7 @@ import { useQuasar } from 'quasar'
 import { useAuthStore } from '../stores/authStore'
 import api from '../services/api'
 import logoImg from '../assets/logo-principal-azul.png'
+import { isOwner } from '../config/owner'
 
 const router = useRouter()
 const route  = useRoute()
@@ -418,6 +435,7 @@ const showConfirmar = ref(false)
 
 // ── Computed ──────────────────────────────────────────────
 const esAdmin = computed(() => auth.hasRole('administrador'))
+const esPropietarioGoogle = computed(() => isOwner(auth.user?.email))
 
 const isProfesorActive = computed(() =>
   isActive('ProfesorSesion') ||

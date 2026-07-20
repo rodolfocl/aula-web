@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
+import { isOwner } from '../config/owner'
 
 const routes = [
   {
@@ -88,6 +89,12 @@ const routes = [
         component: () => import('../views/ArchivosView.vue'),
         meta: { roles: ['administrador', 'profesor'] },
       },
+      {
+        path: 'admin/integraciones',
+        name: 'AdminIntegraciones',
+        component: () => import('../views/admin/AdminIntegraciones.vue'),
+        meta: { roles: ['administrador'], ownerOnly: true },
+      },
     ],
   },
   {
@@ -110,6 +117,8 @@ router.beforeEach((to) => {
 
   if (to.meta.rol && !auth.hasRole(to.meta.rol)) return { name: 'Login' }
   if (to.meta.roles && !to.meta.roles.some(r => auth.hasRole(r))) return { name: 'Login' }
+
+  if (to.meta.ownerOnly && !isOwner(auth.user?.email)) return { name: 'Inicio' }
 
   return true
 })
