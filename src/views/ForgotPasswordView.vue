@@ -18,9 +18,6 @@
         <!-- Estado: enviado -->
         <template v-if="enviado">
           <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 12px;">
-            <div class="espiga-icon-box">
-              <img :src="espiga" alt="" style="height: 28px;" />
-            </div>
             <div class="auth-title">Revisa tu correo</div>
             <div class="auth-subtitle" style="margin-bottom: 0;">
               Si <strong style="color: #0D1B3E;">{{ form.email }}</strong> está registrado,

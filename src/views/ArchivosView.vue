@@ -45,7 +45,7 @@
       <div
         class="drop-zone"
         :class="{ 'drop-zone--activa': dragging }"
-        @dragover.prevent="dragging = true"
+        @dragover="onDropZoneDragOver"
         @dragleave.self="dragging = false"
         @drop.prevent="onDrop"
         @click="abrirSelectorArchivo"
@@ -65,6 +65,21 @@
           </q-btn>
         </div>
         <q-linear-progress :value="progresoSubida" color="primary" rounded style="height: 6px;" />
+      </div>
+
+      <!-- ── BARRA DE SELECCIÓN ────────────────────────────────── -->
+      <div v-if="haySeleccion" class="seleccion-bar">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="ti ti-checks" style="font-size: 16px; color: #C9A96E;" />
+          <span style="font-size: 13px; color: #0D1B3E; font-weight: 600;">
+            {{ seleccionados.size }} seleccionado{{ seleccionados.size > 1 ? 's' : '' }}
+          </span>
+          <span style="font-size: 12px; color: #94A3B8;">— arrastra a una carpeta para mover</span>
+        </div>
+        <q-btn flat dense style="font-size: 12px; color: #64748B; border-radius: 6px;" @click="limpiarSeleccion">
+          <i class="ti ti-x" style="font-size: 13px; margin-right: 3px;" />
+          Cancelar selección
+        </q-btn>
       </div>
 
       <!-- ── LOADING ─────────────────────────────────────────── -->
@@ -128,14 +143,18 @@
               v-for="carpeta in carpetasPaginadas"
               :key="carpeta.id"
               class="item-row item-row--carpeta"
+              :class="{ 'item-row--drop-activa': carpetaDropActiva === carpeta.id }"
               @click="navegarA(carpeta.id)"
+              @dragover="onDragOverCarpeta(carpeta, $event)"
+              @dragleave.self="onDragLeaveCarpeta"
+              @drop="onDropCarpeta(carpeta, $event)"
             >
               <div class="item-icono-wrap" style="position: relative;">
-                <i class="ti ti-folder-filled" style="font-size: 22px; color: #C9A96E;" />
-                <i
-                  v-if="carpeta.starred"
-                  class="ti ti-star-filled item-star-badge"
-                />
+                <q-spinner v-if="carpetaMoviendo === carpeta.id" size="20px" color="primary" />
+                <template v-else>
+                  <i class="ti ti-folder-filled" style="font-size: 22px; color: #C9A96E;" />
+                  <i v-if="carpeta.starred" class="ti ti-star-filled item-star-badge" />
+                </template>
               </div>
               <div class="item-nombre-wrap">
                 <span class="item-nombre">{{ carpeta.name }}</span>
@@ -190,13 +209,36 @@
               v-for="archivo in archivosPaginados"
               :key="archivo.id"
               class="item-row"
-              @click="abrirPreview(archivo)"
+              :class="{
+                'item-row--seleccionado': seleccionados.has(archivo.id),
+                'item-row--arrastrando': itemsArrastrando.some(i => i.id === archivo.id),
+              }"
+              :draggable="true"
+              @dragstart="onDragStartArchivo(archivo, $event)"
+              @dragend="onDragEndArchivo"
+              @click="haySeleccion ? toggleSeleccion(archivo, $event) : abrirPreview(archivo)"
             >
-              <div class="item-icono-wrap" style="position: relative;">
+              <div
+                class="item-icono-wrap item-icono-selectable"
+                style="position: relative;"
+                @click.stop="toggleSeleccion(archivo, $event)"
+              >
                 <div class="item-icono-archivo" :style="`background: ${bgMime(archivo.mimeType)};`">
                   <i
                     :class="`ti ${iconoMimeTi(archivo.mimeType)}`"
                     :style="`font-size: 16px; color: ${colorIconoMime(archivo.mimeType)};`"
+                  />
+                </div>
+                <div
+                  class="item-checkbox-overlay"
+                  :class="{ 'item-checkbox-overlay--visible': seleccionados.has(archivo.id) || haySeleccion }"
+                >
+                  <q-checkbox
+                    :model-value="seleccionados.has(archivo.id)"
+                    color="primary"
+                    dense
+                    @update:model-value="() => {}"
+                    @click.stop="toggleSeleccion(archivo, $event)"
                   />
                 </div>
                 <i
@@ -857,6 +899,96 @@ function formatearFecha(iso) {
   return new Date(iso).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+// ── Selección y drag interno ──────────────────────────────
+const seleccionados     = ref(new Set())
+const itemsArrastrando  = ref([])
+const carpetaDropActiva = ref(null)
+const carpetaMoviendo   = ref(null)
+const haySeleccion      = computed(() => seleccionados.value.size > 0)
+
+function toggleSeleccion(item, event) {
+  event?.stopPropagation()
+  const s = new Set(seleccionados.value)
+  if (s.has(item.id)) s.delete(item.id)
+  else s.add(item.id)
+  seleccionados.value = s
+}
+
+function limpiarSeleccion() {
+  seleccionados.value = new Set()
+}
+
+function onDropZoneDragOver(event) {
+  if (itemsArrastrando.value.length > 0) return
+  event.preventDefault()
+  dragging.value = true
+}
+
+function onDragStartArchivo(archivo, event) {
+  const items = seleccionados.value.has(archivo.id)
+    ? archivos.value.filter(a => seleccionados.value.has(a.id))
+    : [archivo]
+  itemsArrastrando.value = items
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData('text/plain', '')
+}
+
+function onDragEndArchivo() {
+  itemsArrastrando.value = []
+  carpetaDropActiva.value = null
+}
+
+function onDragOverCarpeta(carpeta, event) {
+  if (itemsArrastrando.value.length === 0) return
+  event.preventDefault()
+  event.stopPropagation()
+  carpetaDropActiva.value = carpeta.id
+}
+
+function onDragLeaveCarpeta() {
+  carpetaDropActiva.value = null
+}
+
+async function onDropCarpeta(carpeta, event) {
+  event.preventDefault()
+  event.stopPropagation()
+  carpetaDropActiva.value = null
+  const items = [...itemsArrastrando.value]
+  itemsArrastrando.value = []
+  if (items.length === 0) return
+  await moverElementosMultiple(items, carpeta.id, carpeta.name)
+}
+
+async function moverElementosMultiple(items, newParentId, nombreDestino) {
+  const idsAMover = new Set(items.map(i => i.id))
+  const archivosEliminados = archivos.value.filter(a => idsAMover.has(a.id))
+
+  // Optimistic: quitar de la lista de inmediato
+  archivos.value = archivos.value.filter(a => !idsAMover.has(a.id))
+  seleccionados.value = new Set()
+  carpetaMoviendo.value = newParentId
+
+  try {
+    await Promise.all(items.map(item =>
+      api.patch(`/drive/items/${item.id}/move`, { newParentId })
+    ))
+    const label = items.length === 1 ? `"${items[0].name}"` : `${items.length} archivos`
+    $q.notify({
+      type: 'positive',
+      message: `${label} movido${items.length > 1 ? 's' : ''} a "${nombreDestino}".`,
+      position: 'top',
+    })
+  } catch (err) {
+    // Revertir si falló
+    archivos.value = [...archivos.value, ...archivosEliminados]
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+    const msg = err.response?.data?.error || 'No se pudo mover los elementos.'
+    $q.notify({ type: 'negative', message: msg, position: 'top' })
+  } finally {
+    carpetaMoviendo.value = null
+  }
+}
+
 // ── Inicialización ────────────────────────────────────────
 onMounted(() => {
   const folderId = route.query.folderId ?? null
@@ -1239,6 +1371,58 @@ onMounted(() => {
   padding: 64px 0;
   font-size: 14px;
   color: #94A3B8;
+}
+
+/* ── SELECCIÓN Y DRAG ────────────────────────────────── */
+.seleccion-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: #FFFBF3;
+  border: 1px solid #C9A96E;
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.item-row--seleccionado {
+  background: #F0F7FF !important;
+}
+
+.item-row--arrastrando {
+  opacity: 0.45;
+}
+
+.item-row--drop-activa {
+  background: #FFFBF3 !important;
+  outline: 2px solid #C9A96E;
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.item-icono-selectable {
+  cursor: pointer;
+}
+
+.item-checkbox-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: #F7F8FA;
+  border-radius: 8px;
+  z-index: 1;
+}
+
+.item-row:hover .item-checkbox-overlay,
+.item-checkbox-overlay--visible {
+  display: flex;
 }
 
 /* ── RESPONSIVE ──────────────────────────────────────── */

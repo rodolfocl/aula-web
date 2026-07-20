@@ -16,9 +16,7 @@
             :class="['seg-btn', tabActual === 'todas' && 'seg-btn--active']"
             @click="tabActual = 'todas'"
           >
-            Todas
-            <span v-if="cargandoFinalizadas && tabActual === 'todas'" class="seg-count">…</span>
-            <span v-else class="seg-count">{{ instancias.length }}</span>
+            Todas <span class="seg-count">{{ cursosActivos.length + totalFinalizadas }}</span>
           </button>
           <button
             :class="['seg-btn', tabActual === 'activas' && 'seg-btn--active']"
@@ -30,9 +28,7 @@
             :class="['seg-btn', tabActual === 'finalizadas' && 'seg-btn--active']"
             @click="tabActual = 'finalizadas'"
           >
-            Finalizadas
-            <span v-if="cargandoFinalizadas" class="seg-count">…</span>
-            <span v-else class="seg-count">{{ cursosFinalizados.length }}</span>
+            Finalizadas <span class="seg-count">{{ totalFinalizadas }}</span>
           </button>
         </div>
         <q-input
@@ -625,8 +621,9 @@ async function confirmarFinalizar() {
 }
 
 // ── Carga de datos ────────────────────────────────────────────────────
-const finalizadasCargadas = ref(false)
-const cargandoFinalizadas = ref(false)
+const finalizadasCargadas  = ref(false)
+const cargandoFinalizadas  = ref(false)
+const totalFinalizadas     = ref(0)
 
 function initInst(i) {
   return { ...i, alumnos: null, cargandoAlumnos: false }
@@ -644,33 +641,40 @@ async function cargarAlumnos(inst) {
   }
 }
 
-async function cargarFinalizadas() {
+// Carga enrollments de finalizadas bajo demanda (solo una vez)
+async function cargarEnrollmentsFinalizadas() {
   if (finalizadasCargadas.value || cargandoFinalizadas.value) return
   cargandoFinalizadas.value = true
   try {
-    const { data } = await api.get('/courses?status=finished')
-    const existingIds = new Set(instancias.value.map(i => i.id))
-    const nuevas = data.filter(i => !existingIds.has(i.id)).map(initInst)
-    instancias.value.push(...nuevas)
+    const sinEnrollments = cursosFinalizados.value.filter(i => i.alumnos === null)
+    await Promise.all(sinEnrollments.map(inst => cargarAlumnos(inst)))
     finalizadasCargadas.value = true
-    nuevas.forEach(inst => cargarAlumnos(inst))
-  } catch {
-    $q.notify({ type: 'negative', message: 'No se pudieron cargar los cursos finalizados.', position: 'top' })
   } finally {
     cargandoFinalizadas.value = false
   }
 }
 
 watch(tabActual, (tab) => {
-  if (tab === 'finalizadas' || tab === 'todas') cargarFinalizadas()
+  if (tab === 'finalizadas' || tab === 'todas') cargarEnrollmentsFinalizadas()
 })
 
 onMounted(async () => {
   cargando.value = true
   try {
-    const { data } = await api.get('/courses?status=active')
-    instancias.value = data.map(initInst)
-    await Promise.all(instancias.value.map(inst => cargarAlumnos(inst)))
+    const [activasRes, finalizadasRes] = await Promise.all([
+      api.get('/courses?status=active'),
+      api.get('/courses?status=finished'),
+    ])
+    // Todas las instancias disponibles desde el inicio (sin enrollments para finalizadas)
+    instancias.value = [
+      ...activasRes.data.map(initInst),
+      ...finalizadasRes.data.map(initInst),
+    ]
+    totalFinalizadas.value = finalizadasRes.data.length
+    // Solo cargar enrollments de activas
+    await Promise.all(
+      instancias.value.filter(i => i.status === 'active').map(inst => cargarAlumnos(inst))
+    )
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudieron cargar los cursos.', position: 'top' })
   } finally {
