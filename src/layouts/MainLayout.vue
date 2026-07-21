@@ -389,7 +389,7 @@
             @click="fileInputRef.click()"
           />
           <div style="font-size: 11px; color: #94A3B8; text-align: center;">
-            JPEG, PNG o WebP · Máx. 2 MB
+            JPEG, PNG o WebP · Máx. 3 MB
           </div>
         </div>
         <div class="pdv-dialog-actions">
@@ -574,8 +574,8 @@ function onArchivoSeleccionado(event) {
     errorFoto.value = 'Solo se aceptan imágenes JPEG, PNG o WebP.'
     return
   }
-  if (file.size > 2 * 1024 * 1024) {
-    errorFoto.value = 'La imagen supera el límite de 2 MB.'
+  if (file.size > 3 * 1024 * 1024) {
+    errorFoto.value = 'La imagen supera el límite de 3 MB.'
     return
   }
 

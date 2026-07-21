@@ -59,21 +59,11 @@
             </q-input>
           </div>
 
-          <div class="text-right" style="margin-top: -4px;">
-            <router-link :to="{ name: 'ForgotPassword' }" class="auth-link">
-              ¿Olvidaste tu contraseña?
-            </router-link>
-          </div>
-
           <q-banner v-if="error" dense class="auth-banner-error">{{ error }}</q-banner>
 
           <q-btn type="submit" label="Entrar" unelevated class="full-width auth-btn" :loading="cargando" />
         </q-form>
 
-        <div class="auth-footer">
-          <span>¿No tienes cuenta?</span>
-          <router-link :to="{ name: 'Register' }" class="auth-link q-ml-xs">Regístrate</router-link>
-        </div>
       </div>
     </div>
 
@@ -123,11 +113,6 @@
           <q-btn type="submit" label="Entrar" unelevated class="full-width auth-btn" :loading="cargando" />
         </q-form>
 
-        <div class="text-center" style="margin-top: 12px;">
-          <router-link :to="{ name: 'ForgotPassword' }" class="auth-link" style="font-size: 13px;">
-            ¿Olvidaste tu contraseña?
-          </router-link>
-        </div>
       </div>
     </div>
 
