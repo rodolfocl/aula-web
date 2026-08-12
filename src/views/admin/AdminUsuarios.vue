@@ -73,6 +73,7 @@
         <template #top-right>
           <q-input
             v-model="filtro" outlined dense placeholder="Buscar..." clearable
+            class="buscador-input"
             style="min-width: 200px;"
           >
             <template #prepend><q-icon name="search" color="grey-5" /></template>
@@ -478,6 +479,11 @@ async function reactivar(usuario) {
 <style>
 /* Sin scoped: penetra en los internos de q-table */
 .usuarios-tabla .q-table tbody tr { cursor: pointer; }
+
+.buscador-input input::placeholder {
+  color: #AAAAAA;
+  opacity: 1;
+}
 
 .rol-filter-btn {
   display: inline-flex;

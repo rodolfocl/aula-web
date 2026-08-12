@@ -436,13 +436,13 @@ onBeforeUnmount(() => {
 
 .nm-sep { height: 1px; background: #E7E9EE; flex-shrink: 0; }
 
-.nm-body { flex: 1; overflow-y: auto; min-height: 0; }
+.nm-body { flex: 1; overflow: auto; min-height: 0; }
 
 .nm-centrado { display: flex; align-items: center; justify-content: center; padding: 48px 24px; }
 
 .nm-vacio { color: #9AA0AB; font-size: 14px; }
 
-.nm-tabla-wrap { overflow-x: auto; }
+.nm-tabla-wrap { overflow: visible; }
 
 .nm-tabla {
   border-collapse: collapse;
@@ -461,6 +461,9 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   border-bottom: 1px solid #F0F1F4;
   background: white;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .nm-th-alumno  { text-align: left; min-width: 200px; }

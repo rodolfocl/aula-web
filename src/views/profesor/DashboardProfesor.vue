@@ -27,7 +27,8 @@
         </div>
         <q-input
           v-model="busqueda"
-          placeholder="Buscar plantilla o curso…"
+          placeholder="Buscar curso…"
+          class="buscador-input"
           dense outlined clearable
           style="min-width: 200px; max-width: 300px; background: white; border-radius: 8px;"
         >
@@ -703,6 +704,12 @@ onMounted(async () => {
 }
 
 .seg-btn--active { background: #13224A; color: white; }
+
+/* ── Buscador ── */
+.buscador-input :deep(input::placeholder) {
+  color: #AAAAAA;
+  opacity: 1;
+}
 
 .seg-count {
   font-size: 11px;
