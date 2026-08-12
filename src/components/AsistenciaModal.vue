@@ -470,7 +470,7 @@ onBeforeUnmount(() => {
 /* ── Body ── */
 .ma-body {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
   min-height: 0;
 }
 
@@ -484,7 +484,7 @@ onBeforeUnmount(() => {
 .ma-vacio { color: #9AA0AB; font-size: 14px; }
 
 /* ── Tabla ── */
-.ma-tabla-wrap { overflow-x: auto; }
+.ma-tabla-wrap { overflow: visible; }
 
 .ma-tabla {
   border-collapse: collapse;
