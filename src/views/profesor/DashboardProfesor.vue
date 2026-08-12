@@ -13,12 +13,6 @@
       <div class="row items-center justify-between q-mb-lg" style="flex-wrap: wrap; gap: 10px;">
         <div class="seg-control">
           <button
-            :class="['seg-btn', tabActual === 'todas' && 'seg-btn--active']"
-            @click="tabActual = 'todas'"
-          >
-            Todas <span class="seg-count">{{ cursosActivos.length + totalFinalizadas }}</span>
-          </button>
-          <button
             :class="['seg-btn', tabActual === 'activas' && 'seg-btn--active']"
             @click="tabActual = 'activas'"
           >
@@ -406,10 +400,7 @@ const cursosFinalizados = computed(() =>
 
 const instanciasParaTab = computed(() => {
   const q = busqueda.value.trim().toLowerCase()
-  let base
-  if      (tabActual.value === 'todas')      base = [...cursosActivos.value, ...cursosFinalizados.value]
-  else if (tabActual.value === 'activas')    base = cursosActivos.value
-  else                                        base = cursosFinalizados.value
+  const base = tabActual.value === 'activas' ? cursosActivos.value : cursosFinalizados.value
   return q ? base.filter(i => i.course_name?.toLowerCase().includes(q)) : base
 })
 
@@ -655,7 +646,7 @@ async function cargarEnrollmentsFinalizadas() {
 }
 
 watch(tabActual, (tab) => {
-  if (tab === 'finalizadas' || tab === 'todas') cargarEnrollmentsFinalizadas()
+  if (tab === 'finalizadas') cargarEnrollmentsFinalizadas()
 })
 
 onMounted(async () => {

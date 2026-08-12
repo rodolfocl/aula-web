@@ -346,7 +346,6 @@ async function guardar() {
     await api.post('/attendance/bulk', { registros })
     $q.notify({ type: 'positive', message: 'Asistencia guardada correctamente.', position: 'top' })
     pendiente.value = false
-    cerrar()
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo guardar la asistencia.', position: 'top' })
   } finally {
