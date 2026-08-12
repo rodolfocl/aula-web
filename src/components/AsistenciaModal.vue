@@ -503,12 +503,14 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   border-bottom: 1px solid #F0F1F4;
   background: white;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .ma-th-alumno {
   text-align: left;
   min-width: 210px;
-  position: sticky;
   left: 0;
   z-index: 3;
   background: white;
