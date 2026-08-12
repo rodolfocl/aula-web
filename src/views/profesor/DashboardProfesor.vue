@@ -496,16 +496,7 @@ async function abrirEditar(inst) {
   }
 }
 
-function scheduleChanged() {
-  const inst = instanciaEditando.value
-  return (
-    formEditar.value.start_date  !== (inst.start_date?.slice(0, 10) ?? '') ||
-    formEditar.value.end_date    !== (inst.end_date?.slice(0, 10) ?? '') ||
-    formEditar.value.day_of_week !== (inst.day_of_week ?? '')
-  )
-}
-
-async function doGuardarEdicion() {
+async function guardarEdicion() {
   guardandoEditar.value = true
   try {
     const payload = {
@@ -531,20 +522,6 @@ async function doGuardarEdicion() {
     $q.notify({ type: 'negative', message: 'No se pudo actualizar el curso.', position: 'top' })
   } finally {
     guardandoEditar.value = false
-  }
-}
-
-function guardarEdicion() {
-  if (scheduleChanged()) {
-    $q.dialog({
-      title: 'Actualizar sesiones',
-      message: 'Se generarán nuevas sesiones según las fechas indicadas. Las sesiones que ya tienen asistencia registrada no se verán afectadas.',
-      cancel: { flat: true, label: 'Cancelar', color: 'grey-7' },
-      ok: { unelevated: true, label: 'Confirmar', style: 'background: #0D1B3E; color: white; border-radius: 6px;' },
-      persistent: true,
-    }).onOk(() => doGuardarEdicion())
-  } else {
-    doGuardarEdicion()
   }
 }
 
